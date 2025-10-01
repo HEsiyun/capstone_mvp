@@ -5,7 +5,7 @@ It supports both text and image queries, performing:
 - **NLU** (intent detection + slot extraction),
 - **Tool calls** (SQL queries, CV analysis, SOP retrieval),
 - **Answer composition** (tables, SOP instructions, assessments).
-
+目前是没有接任何数据进来的，纯mock
 ---
 
 ## 1. Setup Environment
