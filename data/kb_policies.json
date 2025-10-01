@@ -1,0 +1,26 @@
+{
+  "inspection_threshold_days": {
+    "default": 180,
+    "playground": 180,
+    "bench": 270,
+    "trail": 365
+  },
+  "risk_weights": {
+    "playground": 1.0,
+    "slide": 1.2,
+    "bench": 0.4,
+    "trail": 0.7,
+    "parking_lot": 0.6
+  },
+  "priority_weights": {
+    "Risk": 0.35,
+    "CondScore": 0.35,
+    "Overdue": 0.2,
+    "CostImpact": 0.1
+  },
+  "safety_notes": [
+    "Lockout-tagout for moving parts.",
+    "Use PPE when applying chemicals (anti-rust).",
+    "Barricade area during maintenance."
+  ]
+}

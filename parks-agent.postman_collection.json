@@ -1,0 +1,114 @@
+{
+  "info": {
+    "name": "Parks RAG-Agent API",
+    "_postman_id": "8a1e3b3c-5f44-49f5-9b2d-001122334455",
+    "description": "End-to-end tests for /agent/answer (uses {{base_url}})",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Overdue playgrounds in Stanley Park (DATA_QUERY)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"text\": \"Which playgrounds are overdue for inspection in Stanley Park?\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/agent/answer",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "agent",
+            "answer"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Service a slide (SOP_QUERY)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"text\": \"What steps are required to service a slide?\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/agent/answer",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "agent",
+            "answer"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Bench image check (IMAGE_ASSESS)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"text\": \"Check this photo—does the bench need repair?\",\n  \"image_uri\": \"file:///tmp/bench.jpg\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/agent/answer",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "agent",
+            "answer"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Overdue playgrounds (Full NLU payload)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"text\": \"Which playgrounds are overdue for inspection in Stanley Park?\",\n  \"nlu\": {\n    \"intent\": \"DATA_QUERY\",\n    \"slots\": {\n      \"asset_type\": \"playground\",\n      \"location\": { \"park_name\": \"Stanley Park\" },\n      \"analysis_type\": \"overdue\",\n      \"limit\": 100\n    },\n    \"route_plan\": [\n      {\n        \"tool\": \"sql_query\",\n        \"args\": {\n          \"template\": \"assets_overdue_by_type_and_park\",\n          \"params\": {\"type\": \"playground\",\"park_name\": \"Stanley Park\",\"threshold_days\": 180,\"limit\": 100}\n        }\n      }\n    ]\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/agent/answer",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "agent",
+            "answer"
+          ]
+        }
+      }
+    }
+  ]
+}
