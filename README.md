@@ -1,35 +1,70 @@
-# Parks Prototype (Baseline Multimodal RAG Agent)
+# 🌿 Parks RAG-Agent Prototype (Baseline v0.3)
 
-This project is a prototype multimodal chatbot for parks asset management.  
-It supports both text and image queries, performing:
-- **NLU** (intent detection + slot extraction),
-- **Tool calls** (SQL queries, CV analysis, SOP retrieval),
-- **Answer composition** (tables, SOP instructions, assessments).
-目前是没有接任何数据进来的，纯mock
+This prototype demonstrates a multimodal RAG-based assistant for Vancouver Park Operations.
+It supports turf, sport field, and horticulture queries across multiple data sources — including GIS, inspection, consultant, and labor data.
+
 ---
 
-## 1. Setup Environment
+## 🧩 System Overview
 
-We recommend Python **3.11** and Node.js **18+**.
+### Architecture
 
-### Backend (FastAPI)
+The system converts natural language (text or image queries) into structured evidence-based answers.
+
+#### 1. NLU (Intent + Slot Extraction)
+
+* Classifies intent (Data Query / SOP Query / Image Assess).
+* Extracts fields such as `asset_type`, `park_name`, and `analysis_type`.
+* Implemented via rule-based heuristics, upgradable to a small LM classifier.
+
+#### 2. MRAG-Agent (Multimodal RAG Orchestrator)
+
+* Decides which tool(s) to call based on intent.
+* Supported mock tools:
+  * `sql_query`: template-based SQL queries over GIS / permit / labor data
+  * `cv_assess`: zero-shot CV model for condition scoring
+  * `kb_retrieve` + `sop_extract`: simple RAG retrieval + pattern-based SOP extraction
+
+#### 3. Evidence Fusion & Answer Composer
+
+* Combines tool outputs into final structured answers.
+* Returns markdown text, tables, and optional map layers.
+* Includes uncertainty flags and citations.
+
+---
+
+## 🧠 Supported Query Types
+
+| Intent | Example Query | Mock Tool Path |
+|--------|---------------|----------------|
+| **Field Feasibility** | "Which U13 soccer fields can be adjusted to meet size standards?" | SQL (GIS / consultant) |
+| **Maintenance SLA** | "List turf areas overdue for mowing by more than 7 days, grouped by district." | SQL (turf inspection) |
+| **Permit Impact** | "If we upgrade Ball Field SF-101, how many permit hours would be affected?" | SQL (permit history) |
+| **Labor Dashboard** | "Show parks with mismatched mowing labor codes in September." | SQL (SAP labor data) |
+| **Image Assess** (optional) | "Check this photo — does the turf show signs of disease or wear?" | CV model |
+
+## 🏗️ Setup Instructions
+
+### 1️⃣ Create Environment
 ```bash
-# Create a new Python environment (conda or venv)
 conda create -n parks-proto python=3.11
 conda activate parks-proto
-
-# Install dependencies
 pip install -r requirements.txt
 ```
+(requirements.txt includes FastAPI, Uvicorn, Pydantic, and CORS)
 
-### Run the FastAPI server:
+### 2️⃣ Run the FastAPI server:
 ```bash
 uvicorn app:app --reload --port 8000
 ```
 The backend will now be available at:
 👉 http://127.0.0.1:8000
+Endpoints:
 
-### Frontend (React + Vite)
+- GET /health
+- POST /nlu/parse
+- POST /agent/answer
+### 3️⃣ RUN Frontend (React + Vite)
 ```bash
 # Move into frontend folder
 cd frontend
@@ -42,7 +77,7 @@ npm run dev
 ```
 
 
-# 🧪 Parks Prototype – API Testing with Postman
+### 4️⃣ Testing with Postman
 
 This guide explains how to test your **FastAPI backend** endpoints using **Postman**.  
 You’ll be able to run both `/nlu/parse` and `/agent/answer` requests interactively,  
@@ -50,7 +85,7 @@ see example outputs, and verify that your prototype pipeline works end-to-end.
 
 ---
 
-## 📁 Files Overview
+#### 📁 Files Overview
 
 | File | Description |
 |------|--------------|
@@ -60,7 +95,7 @@ see example outputs, and verify that your prototype pipeline works end-to-end.
 
 ---
 
-## 🧩 Prerequisites
+#### 🧩 Prerequisites
 
 Make sure your environment is ready before running:
 
@@ -84,7 +119,7 @@ your API is ready.
 
 ---
 
-## 🧰 Import Collections into Postman
+#### 🧰 Import Collections into Postman
 
 1. **Open Postman**  
    Download from [https://www.postman.com/downloads/](https://www.postman.com/downloads/).
@@ -100,75 +135,16 @@ your API is ready.
    - In the upper-right corner, select environment:  
      🟢 **parks-prototype**
 
----
 
-## 🚀 Run the Tests
-
-### 1️⃣ `/nlu/parse` – NLU Intent Detection
-
-- Open the **Parks NLU** collection.  
-- Choose **"Playgrounds need inspection"** and click **Send**.  
-- You should see structured output like this:
-
-```json
-{
-  "intent": "DATA_QUERY",
-  "confidence": 0.82,
-  "slots": {
-    "asset_type": "playground",
-    "location": {"park_name": "Stanley Park"},
-    "inspection_threshold_days": 180
-  },
-  "route_plan": [
-    {"tool": "sql_query", "args": {"template": "assets_overdue_by_type_and_park", "params": {...}}}
-  ]
-}
-```
-
-🧠 **This endpoint only runs the NLU module**, classifying the query and building a tool plan.  
-No external tools are executed yet.
 
 ---
 
-### 2️⃣ `/agent/answer` – Full RAG-Agent Flow
+#### 🖼️ Example Outputs
 
-- Open **Parks Agent** collection.  
-- Try **“Get Maintenance Steps (SOP)”** or **“Bench Image Assessment”**.  
-- Click **Send** to run a complete pipeline.
-
-Example output:
-
-```json
-{
-  "answer_md": "**Maintenance SOP for playground**\n\n### Steps\n1. Inspect slide surface...",
-  "tables": [],
-  "citations": [{"title": "Manual snippet", "source": "kb_manuals/playground_sop.pdf#p4"}],
-  "logs": [
-    {"tool": "kb_retrieve", "elapsed_ms": 25, "ok": true},
-    {"tool": "sop_extract", "elapsed_ms": 17, "ok": true}
-  ]
-}
-```
-
-🧩 **This endpoint runs NLU + all tools (SQL, CV, KB)** and returns a fully composed Markdown answer.
-
----
-
-## ⚠️ Common Issues
-
-| Problem | Likely Cause | Fix |
-|----------|---------------|-----|
-| `405 Method Not Allowed` | Missing CORS headers | Confirm your `app.py` includes CORSMiddleware |
-| No response / timeout | Backend not running | Run `uvicorn app:app --reload --port 8000` |
-| `base_url` undefined | Forgot to select environment | Select **parks-prototype** in Postman |
-
----
-
-## ✅ Quick Recap
-
-| Step | Action | Result |
-|------|---------|--------|
-| 1 | Run backend server | API available at `localhost:8000` |
-| 2 | Import Postman files | Pre-built requests ready |
-| 3 | Test `/nlu/parse` | See classified intents & slots |
-| 4 | Test `/agent/answer` | See full multimodal RAG output |
+| Input | Intent | Example Output |
+|-------|--------|----------------|
+| "Which U13 soccer fields..." | DATA_QUERY | Table of feasible fields with map links |
+| "List turf areas overdue..." | DATA_QUERY | Grouped table of overdue mowing tasks |
+| "If we upgrade Ball Field..." | DATA_QUERY | Table of permit hours affected |
+| "Show parks with mismatched labor..." | DATA_QUERY | Dashboard summary with labor codes |
+| Image upload + text | IMAGE_ASSESS | Condition score + labels ("disease", "bare_patch") |
