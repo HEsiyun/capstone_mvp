@@ -45,7 +45,7 @@ The system converts natural language (text or image queries) into structured evi
 
 ## 🖥️ Current User Interface
 
-![UI Screenshot](/ui.png)
+![UI Screenshot](/UI.png)
 
 ## 🏗️ Setup Instructions
 
