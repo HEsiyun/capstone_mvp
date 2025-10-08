@@ -43,6 +43,10 @@ The system converts natural language (text or image queries) into structured evi
 | **Labor Dashboard** | "Show parks with mismatched mowing labor codes in September." | SQL (SAP labor data) |
 | **Image Assess** (optional) | "Check this photo — does the turf show signs of disease or wear?" | CV model |
 
+## 🖥️ Current User Interface
+
+![UI Screenshot](/ui.png)
+
 ## 🏗️ Setup Instructions
 
 ### 1️⃣ Create Environment
