@@ -1,113 +1,81 @@
 {
   "info": {
-    "name": "Parks RAG-Agent API",
+    "name": "Parks RAG-Agent API (updated)",
     "_postman_id": "8a1e3b3c-5f44-49f5-9b2d-001122334455",
     "description": "End-to-end tests for /agent/answer (uses {{base_url}})",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "Overdue playgrounds in Stanley Park (DATA_QUERY)",
+      "name": "Field Feasibility – U13 soccer (DATA_QUERY → GIS feasibility)",
       "request": {
         "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"text\": \"Which playgrounds are overdue for inspection in Stanley Park?\"\n}"
+          "raw": "{\n  \"text\": \"Which U13 soccer fields can be adjusted to meet size standards? Return map + table.\"\n}"
         },
-        "url": {
-          "raw": "{{base_url}}/agent/answer",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "agent",
-            "answer"
-          ]
-        }
+        "url": { "raw": "{{base_url}}/agent/answer", "host": ["{{base_url}}"], "path": ["agent","answer"] }
       }
     },
     {
-      "name": "Service a slide (SOP_QUERY)",
+      "name": "Maintenance SLA – mowing overdue by >7 days (DATA_QUERY → SLA)",
       "request": {
         "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"text\": \"What steps are required to service a slide?\"\n}"
+          "raw": "{\n  \"text\": \"List turf areas overdue for mowing by more than 7 days, grouped by district.\"\n}"
         },
-        "url": {
-          "raw": "{{base_url}}/agent/answer",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "agent",
-            "answer"
-          ]
-        }
+        "url": { "raw": "{{base_url}}/agent/answer", "host": ["{{base_url}}"], "path": ["agent","answer"] }
       }
     },
     {
-      "name": "Bench image check (IMAGE_ASSESS)",
+      "name": "Permit Impact – upgrade Ball Field SF-101 (DATA_QUERY → permits)",
       "request": {
         "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"text\": \"Check this photo—does the bench need repair?\",\n  \"image_uri\": \"file:///tmp/bench.jpg\"\n}"
+          "raw": "{\n  \"text\": \"If we upgrade Ball Field SF-101, how many permit hours would be affected based on the last two years?\"\n}"
         },
-        "url": {
-          "raw": "{{base_url}}/agent/answer",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "agent",
-            "answer"
-          ]
-        }
+        "url": { "raw": "{{base_url}}/agent/answer", "host": ["{{base_url}}"], "path": ["agent","answer"] }
       }
     },
     {
-      "name": "Overdue playgrounds (Full NLU payload)",
+      "name": "Labor Dashboard – mismatched mowing labor codes (DATA_QUERY → SAP labor)",
       "request": {
         "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"text\": \"Which playgrounds are overdue for inspection in Stanley Park?\",\n  \"nlu\": {\n    \"intent\": \"DATA_QUERY\",\n    \"slots\": {\n      \"asset_type\": \"playground\",\n      \"location\": { \"park_name\": \"Stanley Park\" },\n      \"analysis_type\": \"overdue\",\n      \"limit\": 100\n    },\n    \"route_plan\": [\n      {\n        \"tool\": \"sql_query\",\n        \"args\": {\n          \"template\": \"assets_overdue_by_type_and_park\",\n          \"params\": {\"type\": \"playground\",\"park_name\": \"Stanley Park\",\"threshold_days\": 180,\"limit\": 100}\n        }\n      }\n    ]\n  }\n}"
+          "raw": "{\n  \"text\": \"Show parks with mismatched mowing labor codes in September, with totals by code.\"\n}"
         },
-        "url": {
-          "raw": "{{base_url}}/agent/answer",
-          "host": [
-            "{{base_url}}"
-          ],
-          "path": [
-            "agent",
-            "answer"
-          ]
-        }
+        "url": { "raw": "{{base_url}}/agent/answer", "host": ["{{base_url}}"], "path": ["agent","answer"] }
+      }
+    },
+    {
+      "name": "Image Assess (optional) – turf disease/wear (IMAGE_ASSESS)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"text\": \"Check this photo — does the turf show signs of disease or wear?\",\n  \"image_uri\": \"file:///tmp/turf.jpg\"\n}"
+        },
+        "url": { "raw": "{{base_url}}/agent/answer", "host": ["{{base_url}}"], "path": ["agent","answer"] }
+      }
+    },
+    {
+      "name": "Field Feasibility – Full NLU payload (bypass NLU)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"text\": \"Which U13 soccer fields can be adjusted to meet size standards? Return map + table.\",\n  \"nlu\": {\n    \"intent\": \"DATA_QUERY\",\n    \"slots\": {\n      \"asset_type\": \"soccer_field\",\n      \"analysis_type\": \"feasibility\",\n      \"standard\": \"U13\",\n      \"limit\": 100\n    },\n    \"route_plan\": [\n      {\n        \"tool\": \"sql_query\",\n        \"args\": {\n          \"template\": \"fields_feasible_by_standard\",\n          \"params\": {\"sport\": \"soccer\",\"standard\": \"U13\",\"limit\": 100}\n        }\n      }\n    ]\n  }\n}"
+        },
+        "url": { "raw": "{{base_url}}/agent/answer", "host": ["{{base_url}}"], "path": ["agent","answer"] }
       }
     }
   ]
