@@ -7,320 +7,249 @@ from typing import Any, Dict, List, Optional
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-# =========================
-# 0) Domain dictionaries
-# =========================
+# NEW: add duckdb + pandas + Path
+import duckdb, pandas as pd
+from pathlib import Path
+
+# -----------------------------
+# NLU (rule-based v0, English only)
+# -----------------------------
 ASSET_TYPE_ALIASES = {
-    "sports_field": ["sports field", "field", "pitch", "soccer field", "ball field"],
-    "turf": ["turf", "grass", "lawn"],
-    "horticulture": ["horticulture", "bed", "garden"],
+    "bench": ["bench", "benches"],
+    "playground": ["playground", "playgrounds"],
+    "trail": ["trail", "trails", "path", "paths", "walkway", "walkways"],
+    "parking_lot": ["parking lot", "parking", "car park"],
 }
-
-SPORT_ALIASES = {
-    "soccer": ["soccer", "football"],
-    "softball": ["softball"],
-    "baseball": ["baseball"],
-}
-
-AGE_ALIASES = {
-    "U13": ["u13", "under 13"],
-    "U11": ["u11", "under 11"],
-    "Adult": ["adult", "senior"],
-}
-
 PARK_ALIASES = {
     "Queen Elizabeth Park": ["queen elizabeth park", "qe park"],
     "Stanley Park": ["stanley park", "stanley"],
 }
-
-DISTRICT_ALIASES = {
-    "West": ["west district", "west"],
-    "East": ["east district", "east"],
-    "South": ["south district", "south"],
-    "North": ["north district", "north"],
+DEFAULT_INSPECTION_THRESHOLD = {
+    "playground": 180,
+    "bench": 270,
+    "trail": 365,
+    "parking_lot": 365,
+    "_default": 300,
 }
 
-# 简单的“默认阈值/参数”，真实项目里可来自 KB 或配置表
-DEFAULTS = {
-    "mowing_overdue_days": 7,
-    "permit_lookback_years": 2,
-}
-
-# =========================
-# 1) Small helpers
-# =========================
 def _norm(s: Optional[str]) -> str:
     return (s or "").strip().lower()
 
-def _contains_any(text: str, words: List[str]) -> bool:
-    t = _norm(text)
-    return any(w in t for w in words)
-
-def _map_alias(text: str, alias_map: Dict[str, List[str]]) -> Optional[str]:
-    t = _norm(text)
-    for k, vs in alias_map.items():
-        if _norm(k) in t:
-            return k
-        for v in vs:
-            if _norm(v) in t:
-                return k
+def _guess_type(t: str) -> Optional[str]:
+    if "bench" in t: return "bench"
+    if "playground" in t or "slide" in t or "swing" in t: return "playground"
+    if "trail" in t or "path" in t or "walkway" in t: return "trail"
+    if "parking" in t: return "parking_lot"
     return None
 
-def _parse_int(text: str, pattern: str) -> Optional[int]:
-    m = re.search(pattern, _norm(text))
+def _find_park_name(text: str) -> Optional[str]:
+    t = _norm(text)
+    for canonical, aliases in PARK_ALIASES.items():
+        cand = [canonical] + aliases
+        for c in cand:
+            if _norm(c) in t:
+                return canonical
+    return None
+
+def _parse_limit(text: str) -> Optional[int]:
+    m = re.search(r"\btop\s+(\d{1,3})\b", _norm(text))
     return int(m.group(1)) if m else None
 
-def _parse_month(text: str) -> Optional[str]:
-    # naive: pick 3-letter month tokens (sep, september)
+# ---- month/year parsing for the new DuckDB use case ----
+_MONTHS = {
+    'january':1,'february':2,'march':3,'april':4,'may':5,'june':6,
+    'july':7,'august':8,'september':9,'october':10,'november':11,'december':12
+}
+def parse_month_year(text: str) -> tuple[Optional[int], Optional[int]]:
+    """
+    e.g. '... in May 2025' -> (5, 2025)
+    """
     t = _norm(text)
-    months = {
-        "jan": "01", "january": "01",
-        "feb": "02", "february": "02",
-        "mar": "03", "march": "03",
-        "apr": "04", "april": "04",
-        "may": "05",
-        "jun": "06", "june": "06",
-        "jul": "07", "july": "07",
-        "aug": "08", "august": "08",
-        "sep": "09", "sept": "09", "september": "09",
-        "oct": "10", "october": "10",
-        "nov": "11", "november": "11",
-        "dec": "12", "december": "12",
-    }
-    for k, v in months.items():
-        if k in t:
-            year = _parse_int(t, r"\b(20\d{2})\b") or datetime.utcnow().year
-            return f"{year}-{v}"
-    return None
-
-# =========================
-# 2) Intent classification
-# (updated to new 4+1 intents)
-# =========================
-INTENTS = [
-    "FIELD_MOD_FEASIBILITY",   # 场地改造/重分类可行性（基于标准）
-    "MAINTENANCE_SLA",         # 维护合规（turf/hort）
-    "PERMIT_IMPACT",           # 许可影响分析
-    "LABOR_DASHBOARD",         # 劳务编码质量/成本视图
-    "IMAGE_ASSESS",            # （可选）图像评估
-    "OTHER",
-]
+    m = re.search(r"\bin\s+([a-z]+)\s+(\d{4})\b", t)
+    if not m:
+        return None, None
+    month_name = m.group(1)
+    year = int(m.group(2))
+    month = _MONTHS.get(month_name, None)
+    return month, year
 
 def classify_intent(text: str, image_uri: Optional[str]) -> (str, float):
     t = _norm(text)
 
-    # 图片驱动
-    if image_uri or _contains_any(t, ["photo", "image", "picture", "upload"]):
-        if _contains_any(t, ["disease", "wear", "bare", "weed", "rust", "crack", "check this"]):
+    # image-driven
+    if image_uri:
+        if re.search(r"(need repair|does this|check this|is this broken|does it need maintenance)", t):
             return "IMAGE_ASSESS", 0.85
         return "IMAGE_ASSESS", 0.70
 
-    # 场地改造/可行性：soccer/softball/baseball + “fit/adjust/meet standard/diamond/resize”
-    if (_map_alias(t, SPORT_ALIASES) and
-        _contains_any(t, ["fit", "adjust", "resize", "meet size standard", "meet standard", "diamond"])):
-        return "FIELD_MOD_FEASIBILITY", 0.85
+    # NEW: labor cost question (duckdb)
+    if re.search(r"highest\s+total\s+mowing\s+labor\s+cost\s+in\s+[a-z]+\s+\d{4}", t):
+        return "LABOR_COST_TOP_PARK", 0.90
 
-    # 维护合规：turf/horticulture + overdue/frequency/mowing/pruning + group by
-    if (_contains_any(t, ["turf", "horticulture", "mowing", "pruning", "overdue", "frequency"]) or
-        _map_alias(t, DISTRICT_ALIASES)):
-        return "MAINTENANCE_SLA", 0.80
+    # maintenance steps / procedures
+    if re.search(r"(how to|what steps|procedure).*(service|repair|maintain|maintenance)", t):
+        return "SOP_QUERY", 0.85
 
-    # 许可影响：permit hours / affected / upgrade/close
-    if _contains_any(t, ["permit", "affected", "upgrade", "close", "closure", "two years"]):
-        return "PERMIT_IMPACT", 0.80
+    # overdue / need inspection
+    if re.search(r"(overdue|need.*inspection|due for inspection|past due)", t):
+        return "DATA_QUERY", 0.80
 
-    # 劳务视图：mowing labor code / mismatched / crews / cost per hectare
-    if _contains_any(t, ["labor code", "mismatched", "miscoding", "crews", "cost per hectare", "sap"]):
-        return "LABOR_DASHBOARD", 0.85
+    return "DATA_QUERY", 0.60
 
-    return "OTHER", 0.50
-
-# =========================
-# 3) Slot extraction
-# =========================
 def extract_slots(text: str, image_uri: Optional[str]) -> Dict[str, Any]:
     t = _norm(text)
-    slots: Dict[str, Any] = {
-        "asset_type": None,
-        "sport": None,
-        "age_group": None,
-        "park_name": None,
-        "district": None,
-        "overdue_days": None,
-        "month": None,
-        "years_lookback": None,
-        "field_id": None,
+    asset_type = _guess_type(t)
+    park = _find_park_name(t)
+    limit = _parse_limit(t) or 100
+    threshold = DEFAULT_INSPECTION_THRESHOLD.get(asset_type or "", DEFAULT_INSPECTION_THRESHOLD["_default"])
+
+    # NEW: month/year (for LABOR_COST_TOP_PARK)
+    month, year = parse_month_year(text)
+
+    return {
+        "asset_type": asset_type,
+        "location": {"park_name": park} if park else None,
+        "inspection_threshold_days": threshold,
+        "limit": limit,
         "image_uri": image_uri,
-        "limit": _parse_int(t, r"\btop\s+(\d{1,3})\b") or 100,
+        "analysis_type": "overdue",
+        "month": month,
+        "year": year,
     }
 
-    # asset scope
-    slots["asset_type"] = _map_alias(t, ASSET_TYPE_ALIASES)
-
-    # sport + age
-    slots["sport"] = _map_alias(t, SPORT_ALIASES)
-    slots["age_group"] = _map_alias(t, AGE_ALIASES)
-
-    # park & district
-    slots["park_name"] = _map_alias(t, PARK_ALIASES)
-    slots["district"] = _map_alias(t, DISTRICT_ALIASES)
-
-    # overdue days
-    days = _parse_int(t, r"\boverdue\s+by\s+(\d{1,3})\s+days\b")
-    if days is None:
-        days = _parse_int(t, r"\bmore than\s+(\d{1,3})\s+days\b")
-    slots["overdue_days"] = days or DEFAULTS["mowing_overdue_days"]
-
-    # month (for labor dashboard filter)
-    slots["month"] = _parse_month(t)
-
-    # years lookback (for permit impact)
-    yl = _parse_int(t, r"\blast\s+(\d)\s+years\b") or _parse_int(t, r"\bpast\s+(\d)\s+years\b")
-    slots["years_lookback"] = yl or DEFAULTS["permit_lookback_years"]
-
-    # field id (if user mentions a specific one)
-    m = re.search(r"\bfield\s*([A-Za-z0-9\-]+)\b", t)
-    if m: slots["field_id"] = m.group(1)
-
-    return slots
-
-# =========================
-# 4) Plan builder (tool routing)
-# =========================
 def build_route_plan(intent: str, slots: Dict[str, Any]) -> List[Dict[str, Any]]:
     plan: List[Dict[str, Any]] = []
-    if intent == "FIELD_MOD_FEASIBILITY":
-        # 先拉出相关标准（运动/年龄段），再进行空间/尺寸校验
-        std_query = f"{slots.get('sport') or 'sport'} {slots.get('age_group') or ''} field size standard".strip()
-        plan.append({"tool": "kb_retrieve", "args": {"query": std_query, "top_k": 3}})
+
+    if intent == "LABOR_COST_TOP_PARK":
         plan.append({"tool": "sql_query", "args": {
-            "template": "field_mod_feasibility",
-            "params": {
-                "sport": slots.get("sport"),
-                "age_group": slots.get("age_group"),
-                "park_name": slots.get("park_name"),
-                "limit": slots.get("limit"),
-            }
+            "template": "labor_top_cost_by_month",
+            "params": {"month": slots.get("month"), "year": slots.get("year")}
         }})
-    elif intent == "MAINTENANCE_SLA":
-        # 找到频次/阈值，再做合规性对比
-        plan.append({"tool": "kb_retrieve", "args": {"query": "turf horticulture maintenance frequency standard", "top_k": 3}})
-        plan.append({"tool": "sop_extract", "args": {"schema": ["frequency", "season", "threshold_days"]}})
-        plan.append({"tool": "sql_query", "args": {
-            "template": "turf_hort_overdue",
-            "params": {
-                "district": slots.get("district"),
-                "overdue_days": slots.get("overdue_days"),
-                "limit": slots.get("limit"),
-            }
-        }})
-    elif intent == "PERMIT_IMPACT":
-        plan.append({"tool": "sql_query", "args": {
-            "template": "permit_impact",
-            "params": {
-                "field_id": slots.get("field_id"),
-                "years_lookback": slots.get("years_lookback"),
-                "park_name": slots.get("park_name"),
-            }
-        }})
-        # 可选：检索规则说明（作为引用）
-        plan.append({"tool": "kb_retrieve", "args": {"query": "permitting policy and reallocation rules", "top_k": 2}})
-    elif intent == "LABOR_DASHBOARD":
-        plan.append({"tool": "kb_retrieve", "args": {"query": "mowing labor coding rules", "top_k": 2}})
-        plan.append({"tool": "sql_query", "args": {
-            "template": "labor_miscoding",
-            "params": {
-                "month": slots.get("month"),
-                "district": slots.get("district"),
-            }
-        }})
+        return plan
+
+    if intent == "SOP_QUERY":
+        plan.append({"tool": "kb_retrieve", "args": {"query": f"maintenance steps {slots.get('asset_type') or 'asset'}", "top_k": 3}})
+        plan.append({"tool": "sop_extract", "args": {"schema": ["steps", "materials", "tools", "safety"]}})
     elif intent == "IMAGE_ASSESS":
         plan.append({"tool": "cv_assess", "args": {"image_uri": slots.get("image_uri"), "asset_type": slots.get("asset_type")}})
-    else:
-        plan.append({"tool": "kb_retrieve", "args": {"query": "project scope faq", "top_k": 2}})
+    else:  # DATA_QUERY default
+        plan.append({"tool": "sql_query", "args": {
+            "template": "assets_overdue_by_type_and_park",
+            "params": {
+                "type": slots.get("asset_type"),
+                "park_name": (slots.get("location") or {}).get("park_name") or "Stanley Park",
+                "threshold_days": slots.get("inspection_threshold_days"),
+                "limit": slots.get("limit"),
+            }
+        }})
     return plan
 
-# =========================
-# 5) NLU public
-# =========================
 def nlu_parse(text: str, image_uri: Optional[str] = None) -> Dict[str, Any]:
     intent, conf = classify_intent(text, image_uri)
     slots = extract_slots(text, image_uri)
     plan = build_route_plan(intent, slots)
     clar = []
     if conf < 0.65:
-        clar.append("I'm not fully sure which analysis you want: field feasibility, maintenance SLA, permit impact, labor dashboard, or image assessment?")
-    if intent in ("FIELD_MOD_FEASIBILITY", "PERMIT_IMPACT") and not slots.get("sport"):
-        clar.append("Which sport is this about (soccer, softball, baseball)?")
+        clar.append("I'm not fully sure about the intent. Do you want inspection data, maintenance steps, or an image assessment?")
+    if not slots.get("asset_type") and intent not in ("IMAGE_ASSESS", "LABOR_COST_TOP_PARK"):
+        clar.append("Which asset type do you mean (playground, bench, trail, parking lot)?")
+    # For LABOR_COST_TOP_PARK sanity check
+    if intent == "LABOR_COST_TOP_PARK" and (not slots.get("month") or not slots.get("year")):
+        clar.append("Which month and year should I use (e.g., 'in May 2025')?")
     return {"intent": intent, "confidence": round(conf, 2), "slots": slots, "route_plan": plan, "clarifications": clar}
 
-# =========================
-# 6) Mock tools (replace later)
-# =========================
+# -----------------------------
+# DuckDB init (backed by your Excel)
+# -----------------------------
+EXCEL_PATH = Path("data/6 Mowing Reports to Jun 20 2025.xlsx")
+_DUCK_CON = duckdb.connect(database=":memory:")
+
+# Load with pandas, normalize types, and register as a DuckDB view
+try:
+    _LABOR_DF = pd.read_excel(EXCEL_PATH, sheet_name=0)
+    # normalize common types
+    if "Posting Date" in _LABOR_DF.columns:
+        _LABOR_DF["Posting Date"] = pd.to_datetime(_LABOR_DF["Posting Date"], errors="coerce")
+    if "Val.in rep.cur." in _LABOR_DF.columns:
+        _LABOR_DF["Val.in rep.cur."] = pd.to_numeric(_LABOR_DF["Val.in rep.cur."], errors="coerce")
+    _DUCK_CON.register("labor_data", _LABOR_DF)
+except Exception as e:
+    # Still allow app to boot, but error will show up when the template is called
+    print(f"[WARN] Failed to load labor Excel: {e}")
+
+# -----------------------------
+# Mock tools (keep existing so other demos work)
+# -----------------------------
 def kb_retrieve(query: str, top_k: int = 3, filters: Optional[dict] = None):
-    # 简单样例，真实项目请接向量检索/关键字检索
-    if "size standard" in query:
-        hits = [
-            {"doc_id":"std001","chunk_id":"c1","text":"U13 soccer field: 90-100m x 45-64m; runoff ≥ 1.5m.","page":2,"image_ref":None,"score":0.92,"source":"consultant/standards_soccer.xlsx#U13"},
-        ]
-    elif "maintenance frequency" in query:
-        hits = [
-            {"doc_id":"std010","chunk_id":"c2","text":"Turf mowing frequency: every 7–10 days in growing season.","page":1,"image_ref":None,"score":0.90,"source":"policy/turf_standards.pdf#p1"},
-        ]
-    elif "mowing labor coding rules" in query:
-        hits = [
-            {"doc_id":"kb020","chunk_id":"c3","text":"Mowing codes must match park asset types. Non-park or other activities should not be used for turf mowing.","page":3,"image_ref":None,"score":0.88,"source":"kb/labor_coding.md#rules"},
-        ]
-    else:
-        hits = [
-            {"doc_id":"kb000","chunk_id":"c0","text":"Project scope and FAQ placeholder.","page":1,"image_ref":None,"score":0.50,"source":"kb/faq.md"},
-        ]
-    return {"hits": hits[:top_k]}
+    hits = [
+        {"doc_id":"kb001","chunk_id":"c1","text":"Playground inspection must occur every 180 days.",
+         "page":4,"image_ref":None,"score":0.92,"source":"kb_manuals/playground_sop.pdf#p4"},
+        {"doc_id":"kb001","chunk_id":"c2","text":"Always lock out moving parts before servicing a slide.",
+         "page":5,"image_ref":None,"score":0.88,"source":"kb_manuals/playground_sop.pdf#p5"},
+    ][:top_k]
+    return {"hits": hits}
 
 def sop_extract(snippets: List[str], schema: List[str]):
-    # 从 snippets 中抽“频次/阈值”等：这里直接 mock
+    steps = [
+        "Inspect slide surface for cracks and sharp edges.",
+        "Clean debris; tighten loose bolts.",
+        "Lubricate moving joints; replace damaged parts.",
+    ]
     return {
-        "frequency": "7-10 days (growing season)",
-        "season": "Apr–Oct",
-        "threshold_days": 7
+        "steps": steps,
+        "materials": ["lubricant", "replacement bolts", "cleaning kit"],
+        "tools": ["socket wrench", "torque wrench"],
+        "safety": ["Lockout moving parts; wear gloves and eye protection."]
     }
 
+# UPDATED: sql_query now supports the DuckDB template
 def sql_query(template: str, params: Dict[str, Any]):
     t0 = time.time()
-    if template == "field_mod_feasibility":
+
+    if template == "labor_top_cost_by_month":
+        month = params.get("month")
+        year = params.get("year")
+        if not month or not year:
+            raise ValueError("month/year required for labor_top_cost_by_month")
+
+        sql = f"""
+        WITH month_data AS (
+          SELECT
+            "CO Object Name" AS park,
+            CAST("Val.in rep.cur." AS DOUBLE) AS cost,
+            CAST("Posting Date" AS TIMESTAMP) AS posting_ts
+          FROM labor_data
+        )
+        SELECT park, SUM(cost) AS total_cost
+        FROM month_data
+        WHERE EXTRACT(YEAR  FROM posting_ts) = {int(year)}
+          AND EXTRACT(MONTH FROM posting_ts) = {int(month)}
+        GROUP BY park
+        ORDER BY total_cost DESC
+        LIMIT 1;
+        """
+        rows = _DUCK_CON.execute(sql).fetchdf().to_dict(orient="records")
+        return {"rows": rows, "rowcount": len(rows), "elapsed_ms": int((time.time()-t0)*1000), "sql": sql}
+
+    # Fallback to your earlier demo template (kept for compatibility)
+    if template == "assets_overdue_by_type_and_park":
         rows = [
-            {"field_id":"SF-101","park":"Stanley Park","sport":"soccer","age_group": params.get("age_group") or "U13",
-             "meets_now": False, "min_change_needed":"widen by 2m; add runoff 1m", "feasibility_score": 0.78},
-            {"field_id":"SF-115","park":"Queen Elizabeth Park","sport":"soccer","age_group": params.get("age_group") or "U13",
-             "meets_now": True, "min_change_needed":"none", "feasibility_score": 0.92},
+            {"asset_id":"pg-001","name":"Playground A","park": (params or {}).get("park_name","Stanley Park"),
+             "last_inspected_at":"2024-12-15","days_overdue": 95, "replacement_cost": 12000},
+            {"asset_id":"pg-007","name":"Playground B","park": (params or {}).get("park_name","Stanley Park"),
+             "last_inspected_at":"2024-10-01","days_overdue": 170, "replacement_cost": 18000},
         ]
-    elif template == "turf_hort_overdue":
-        rows = [
-            {"polygon_id":"T-9001","district": params.get("district") or "West","days_since_mow": 11,"status":"overdue"},
-            {"polygon_id":"T-9012","district": params.get("district") or "West","days_since_mow": 3,"status":"ok"},
-        ]
-    elif template == "permit_impact":
-        rows = [
-            {"field_id": params.get("field_id") or "SF-101","years_lookback": params.get("years_lookback") or 2,
-             "affected_hours": 186, "peak_month":"June","note":"Consider relocation to SF-115"},
-        ]
-    elif template == "labor_miscoding":
-        rows = [
-            {"park":"Stanley Park","month": params.get("month") or "2025-09","code":"MOW-OTHER","hours": 42,"mismatch": True},
-            {"park":"QE Park","month": params.get("month") or "2025-09","code":"MOW-TURF","hours": 210,"mismatch": False},
-        ]
-    else:
-        rows = []
-    time.sleep(0.02)
-    return {"rows": rows, "rowcount": len(rows), "elapsed_ms": int((time.time()-t0)*1000)}
+        return {"rows": rows, "rowcount": len(rows), "elapsed_ms": int((time.time()-t0)*1000), "sql": "-- mock demo"}
+
+    # Unknown template
+    return {"rows": [], "rowcount": 0, "elapsed_ms": int((time.time()-t0)*1000), "sql": "-- unknown template"}
 
 def cv_assess(image_uri: str, asset_type: Optional[str]):
-    # 视觉评估：先返回占位
     return {
-        "condition": "wear_signs",
-        "score": 0.64,
-        "labels": ["bare_patch", "weed_presence"],
-        "explanations": ["Low coverage in center", "Texture anomaly on left"],
+        "condition": "fair",
+        "score": 0.62,
+        "labels": ["paint_peel", "surface_wear"],
+        "explanations": ["Edge wear detected", "Color fading"],
         "low_confidence": False
     }
 
@@ -331,9 +260,9 @@ TOOL_REGISTRY = {
     "cv_assess": cv_assess,
 }
 
-# =========================
-# 7) Agent executor & composer
-# =========================
+# -----------------------------
+# Agent executor
+# -----------------------------
 def execute_plan(plan: List[Dict[str, Any]], slots: Dict[str, Any]) -> Dict[str, Any]:
     state = {
         "slots": slots,
@@ -373,6 +302,9 @@ def execute_plan(plan: List[Dict[str, Any]], slots: Dict[str, Any]) -> Dict[str,
         })
     return state
 
+# -----------------------------
+# Answer composer
+# -----------------------------
 def compose_answer(nlu: Dict[str, Any], state: Dict[str, Any]) -> Dict[str, Any]:
     intent = nlu.get("intent")
     slots = nlu.get("slots", {})
@@ -384,65 +316,47 @@ def compose_answer(nlu: Dict[str, Any], state: Dict[str, Any]) -> Dict[str, Any]
     map_layer = None
     citations: List[Dict[str, Any]] = []
 
-    if intent == "FIELD_MOD_FEASIBILITY":
-        rows = ev["sql"].get("rows", [])
-        tables.append({"name": "feasibility", "columns": list(rows[0].keys()) if rows else [], "rows": rows})
+    if intent == "SOP_QUERY":
+        sop = ev["sop"]
         answer_md = (
-            f"**Field Modification Feasibility** — sport={slots.get('sport') or 'n/a'}, "
-            f"age_group={slots.get('age_group') or 'n/a'}\n\n"
-            f"Returned **{ev['sql'].get('rowcount',0)}** candidates in **{ev['sql'].get('elapsed_ms',0)}ms**."
+            f"**Maintenance SOP for {slots.get('asset_type') or 'asset'}**\n\n"
+            "### Steps\n" + "\n".join([f"{i+1}. {s}" for i, s in enumerate(sop.get('steps', []))]) +
+            "\n\n### Materials\n- " + "\n- ".join(sop.get("materials", [])) +
+            "\n\n### Tools\n- " + "\n- ".join(sop.get("tools", [])) +
+            "\n\n### Safety\n- " + "\n- ".join(sop.get("safety", []))
         )
         for h in ev["kb_hits"]:
-            citations.append({"title": "Standard", "source": h["source"]})
+            citations.append({"title": "Manual snippet", "source": h["source"]})
 
-    elif intent == "MAINTENANCE_SLA":
-        rows = ev["sql"].get("rows", [])
-        tables.append({"name": "turf_hort_sla", "columns": list(rows[0].keys()) if rows else [], "rows": rows})
-        th = ev["sop"].get("threshold_days") or slots.get("overdue_days")
+    elif intent in ("DATA_QUERY", "LABOR_COST_TOP_PARK"):
+        sql = ev["sql"]
+        rows = sql.get("rows", [])
+        tables.append({
+            "name": "results",
+            "columns": list(rows[0].keys()) if rows else [],
+            "rows": rows
+        })
+        label = "Labor: top park by total mowing cost" if intent == "LABOR_COST_TOP_PARK" else "Data query"
         answer_md = (
-            f"**Maintenance SLA Check** — district={slots.get('district') or 'all'}, "
-            f"threshold={th} days\n\n"
-            f"Returned **{ev['sql'].get('rowcount',0)}** rows in **{ev['sql'].get('elapsed_ms',0)}ms**."
+            f"**{label}**\n\n"
+            f"Returned **{sql.get('rowcount',0)}** row(s) in **{sql.get('elapsed_ms',0)}ms**."
         )
-        for h in ev["kb_hits"]:
-            citations.append({"title": "Maintenance standard", "source": h["source"]})
-
-    elif intent == "PERMIT_IMPACT":
-        rows = ev["sql"].get("rows", [])
-        tables.append({"name": "permit_impact", "columns": list(rows[0].keys()) if rows else [], "rows": rows})
-        answer_md = (
-            f"**Permit Impact** — field={slots.get('field_id') or 'n/a'}, "
-            f"lookback={slots.get('years_lookback')} years\n\n"
-            f"Returned **{ev['sql'].get('rowcount',0)}** scenario(s)."
-        )
-        for h in ev["kb_hits"]:
-            citations.append({"title": "Permitting policy", "source": h["source"]})
-
-    elif intent == "LABOR_DASHBOARD":
-        rows = ev["sql"].get("rows", [])
-        tables.append({"name": "labor_miscoding", "columns": list(rows[0].keys()) if rows else [], "rows": rows})
-        answer_md = (
-            f"**Labor Coding Dashboard** — month={slots.get('month') or 'current'}, "
-            f"district={slots.get('district') or 'all'}\n\n"
-            f"Returned **{ev['sql'].get('rowcount',0)}** records."
-        )
-        for h in ev["kb_hits"]:
-            citations.append({"title": "Coding rules", "source": h["source"]})
+        # include SQL text for debugging (nice in your UI)
+        citations.append({"title":"SQL (debug)", "source": (sql.get("sql") or "").strip()})
 
     elif intent == "IMAGE_ASSESS":
         cv = ev["cv"]
         answer_md = (
             f"**Image Assessment**\n\n"
-            f"Condition label: **{cv.get('condition','unknown')}** "
-            f"(score {cv.get('score',0):.2f})\n\n"
+            f"Condition: **{cv.get('condition','unknown')}** (score {cv.get('score',0):.2f})\n\n"
             f"Labels: {', '.join(cv.get('labels', []))}\n\n"
             f"Notes: {'; '.join(cv.get('explanations', []))}"
         )
         if cv.get("low_confidence"):
-            answer_md = "> ⚠ Low confidence — consider another angle.\n\n" + answer_md
+            answer_md = "> ⚠ Low confidence — consider uploading another angle.\n\n" + answer_md
 
     else:
-        answer_md = "I couldn't map this to a known workflow. Try field feasibility, maintenance SLA, permit impact, labor dashboard, or attach a photo."
+        answer_md = "I couldn't map this to a known workflow. Try asking for inspection, SOP, or attach a photo."
 
     return {
         "answer_md": answer_md,
@@ -452,9 +366,9 @@ def compose_answer(nlu: Dict[str, Any], state: Dict[str, Any]) -> Dict[str, Any]
         "logs": logs
     }
 
-# =========================
-# 8) HTTP layer
-# =========================
+# -----------------------------
+# FastAPI HTTP layer
+# -----------------------------
 class NLUReq(BaseModel):
     text: str
     image_uri: Optional[str] = None
@@ -464,9 +378,9 @@ class AgentReq(BaseModel):
     image_uri: Optional[str] = None
     nlu: Optional[Dict[str, Any]] = None
 
-app = FastAPI(title="Parks Prototype API", version="0.2.0")
+app = FastAPI(title="Parks Prototype API", version="0.3.0")
 
-# CORS
+# CORS (for your React/Vite front-end)
 from fastapi.middleware.cors import CORSMiddleware
 app.add_middleware(
     CORSMiddleware,

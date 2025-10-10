@@ -6,8 +6,9 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("agent"); // "agent" | "nlu"
 
   // ---- Query State ----
+  // DEFAULT now set to your real T2SQL question
   const [text, setText] = useState(
-    "Which U13 soccer fields can be adjusted to meet size standards? Return map + table."
+    "Which park had the highest total mowing labor cost in May 2025?"
   );
   const [imageUri, setImageUri] = useState("");
   const [imageFile, setImageFile] = useState(null);
@@ -17,8 +18,12 @@ export default function App() {
   const [resp, setResp] = useState(null);
   const [error, setError] = useState("");
 
-  // ---- Presets for new intents ----
+  // ---- Presets (added your new question) ----
   const presets = [
+    {
+      label: "Mowing Cost (May 2025)",
+      text: "Which park had the highest total mowing labor cost in May 2025?",
+    },
     {
       label: "Field Feasibility",
       text:
@@ -84,7 +89,6 @@ export default function App() {
 
   function renderMarkdown(md) {
     if (!md) return null;
-    // very light markdown → HTML (headings, bold, lists, paragraphs)
     const html = md
       .replace(/^### (.*$)/gim, '<h3 class="md-h3">$1</h3>')
       .replace(/^## (.*$)/gim, '<h2 class="md-h2">$1</h2>')
@@ -268,11 +272,14 @@ export default function App() {
             </div>
           </div>
 
-          {/* Right: tips */}
+          {/* Right: tips (updated with your question) */}
           <aside className="col-side">
             <div className="card">
               <div className="label">Tips</div>
               <ul className="bullets">
+                <li>
+                  <em>Which park had the highest total mowing labor cost in May 2025?</em>
+                </li>
                 <li>
                   <em>Which U13 soccer fields can be adjusted to meet size standards? Return map + table.</em>
                 </li>

@@ -3,3 +3,4 @@ pillow
 fastapi>=0.111
 uvicorn[standard]>=0.30
 pydantic>=2.7
+openpyxl
