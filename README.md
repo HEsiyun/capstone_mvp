@@ -4,6 +4,7 @@ RAG: planning: <2 week
 
 Q2: labour cost合理不合理（输错了的）
 
+branch test/bs
 # 🌿 Parks Prototype (RAG + SQL + CV Agent)
 
 This prototype demonstrates a lightweight Retrieval-Augmented Generation (RAG) system that answers operational questions about Vancouver parks maintenance — such as mowing costs, standard operating procedures, and inspection guidance.
