@@ -1,3 +1,9 @@
+Q1: 除草（planning)
+SQL:割草overdue,返回好久没除草的 
+RAG: planning: <2 week
+
+Q2: labour cost合理不合理（输错了的）
+
 # 🌿 Parks Prototype (RAG + SQL + CV Agent)
 
 This prototype demonstrates a lightweight Retrieval-Augmented Generation (RAG) system that answers operational questions about Vancouver parks maintenance — such as mowing costs, standard operating procedures, and inspection guidance.
@@ -194,3 +200,6 @@ your API is ready.
 | "If we upgrade Ball Field..." | DATA_QUERY | Table of permit hours affected |
 | "Show parks with mismatched labor..." | DATA_QUERY | Dashboard summary with labor codes |
 | Image upload + text | IMAGE_ASSESS | Condition score + labels ("disease", "bare_patch") |
+
+
+
