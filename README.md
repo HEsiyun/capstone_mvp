@@ -46,9 +46,9 @@ mvp/
     └── App.jsx          # simple React client (two sample queries)
 ```
 
-## 🖥️ Current User Interface
+## Pipline
 
-![UI Screenshot](/UI.png)
+![UI Screenshot](/new_design.png)
 
 ## 🏗️ Setup Instructions
 
