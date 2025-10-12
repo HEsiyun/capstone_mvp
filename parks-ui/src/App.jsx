@@ -6,63 +6,27 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("agent"); // "agent" | "nlu"
 
   // ---- Query State ----
-  // DEFAULT now set to your real T2SQL question
   const [text, setText] = useState(
-    "Which park had the highest total mowing labor cost in May 2025?"
+    "Which park had the highest total mowing labor cost in March 2025?"
   );
   const [imageUri, setImageUri] = useState("");
-  const [imageFile, setImageFile] = useState(null);
 
   // ---- UI State ----
   const [loading, setLoading] = useState(false);
   const [resp, setResp] = useState(null);
   const [error, setError] = useState("");
 
-  // ---- Presets (added your new question) ----
+  // ---- Only two presets ----
   const presets = [
     {
-      label: "Mowing Cost (May 2025)",
-      text: "Which park had the highest total mowing labor cost in May 2025?",
+      label: "Mowing Cost (Mar 2025)",
+      text: "Which park had the highest total mowing labor cost in March 2025?",
     },
     {
-      label: "Field Feasibility",
-      text:
-        "Which U13 soccer fields can be adjusted to meet size standards? Return map + table.",
-    },
-    {
-      label: "Maintenance SLA",
-      text:
-        "List turf areas overdue for mowing by more than 7 days, grouped by district.",
-    },
-    {
-      label: "Permit Impact",
-      text:
-        "If we upgrade Ball Field SF-101, how many permit hours would be affected based on the last two years?",
-    },
-    {
-      label: "Labor Dashboard",
-      text:
-        "Show parks with mismatched mowing labor codes in September, with totals by code.",
-    },
-    {
-      label: "Image Assess (optional)",
-      text:
-        "Check this photo — does the turf show signs of disease or wear?",
-      needsImage: true,
+      label: "Mowing Steps & Safety",
+      text: "What are the mowing steps and safety requirements?",
     },
   ];
-
-  // ---- Helpers ----
-  const handleImage = (file) => {
-    if (!file) {
-      setImageFile(null);
-      setImageUri("");
-      return;
-    }
-    setImageFile(file);
-    const url = URL.createObjectURL(file);
-    setImageUri(url);
-  };
 
   async function callEndpoint(path) {
     setLoading(true);
@@ -202,13 +166,7 @@ export default function App() {
                   <button
                     key={p.label}
                     className="btn ghost"
-                    onClick={() => {
-                      setText(p.text);
-                      if (!p.needsImage) {
-                        setImageUri("");
-                        setImageFile(null);
-                      }
-                    }}
+                    onClick={() => setText(p.text)}
                   >
                     {p.label}
                   </button>
@@ -222,24 +180,6 @@ export default function App() {
               />
 
               <div className="row gap">
-                <label className="btn file">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleImage(e.target.files[0])}
-                  />
-                  + Image (optional)
-                </label>
-                {imageUri && (
-                  <div className="row gap">
-                    <img src={imageUri} alt="preview" className="thumb" />
-                    <button className="link danger" onClick={() => handleImage(null)}>
-                      remove
-                    </button>
-                  </div>
-                )}
-
                 <div className="spacer" />
 
                 <div className="tabs">
@@ -272,28 +212,16 @@ export default function App() {
             </div>
           </div>
 
-          {/* Right: tips (updated with your question) */}
+          {/* Right: tips */}
           <aside className="col-side">
             <div className="card">
-              <div className="label">Tips</div>
+              <div className="label">Try these</div>
               <ul className="bullets">
                 <li>
-                  <em>Which park had the highest total mowing labor cost in May 2025?</em>
+                  <em>Which park had the highest total mowing labor cost in March 2025?</em>
                 </li>
                 <li>
-                  <em>Which U13 soccer fields can be adjusted to meet size standards? Return map + table.</em>
-                </li>
-                <li>
-                  <em>List turf areas overdue for mowing by more than 7 days, grouped by district.</em>
-                </li>
-                <li>
-                  <em>If we upgrade Ball Field SF-101, how many permit hours would be affected based on the last two years?</em>
-                </li>
-                <li>
-                  <em>Show parks with mismatched mowing labor codes in September, with totals by code.</em>
-                </li>
-                <li>
-                  <em>Check this photo — does the turf show signs of disease or wear?</em> + upload an image
+                  <em>What are the mowing steps and safety requirements?</em>
                 </li>
               </ul>
             </div>
@@ -307,11 +235,9 @@ export default function App() {
           {resp && (
             <div className="stack">
               {resp.answer_md && <div>{renderMarkdown(resp.answer_md)}</div>}
-
               {activeTab === "agent" && <TablesView tables={resp.tables} />}
               {activeTab === "agent" && <CitationsView citations={resp.citations} />}
               {activeTab === "agent" && <LogsView logs={resp.logs} />}
-
               {activeTab === "nlu" && (
                 <pre className="json">
                   {JSON.stringify(resp, null, 2)}
