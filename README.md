@@ -74,7 +74,7 @@ Endpoints:
 ### 3️⃣ RUN Frontend (React + Vite)
 ```bash
 # Move into frontend folder
-cd frontend
+cd parks-ui
 
 # Install dependencies
 npm install
