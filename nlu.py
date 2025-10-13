@@ -2,9 +2,62 @@ from __future__ import annotations
 import re
 from typing import Any, Dict, List, Optional
 
+try:
+    from sentence_transformers import SentenceTransformer
+    import numpy as np
+except Exception:
+    SentenceTransformer = None
+    np = None
+
 _MONTH_MAP = {m: i for i, m in enumerate(
     ["january","february","march","april","may","june",
      "july","august","september","october","november","december"], start=1)}
+
+# intent examples for embedding-based classifier
+_INTENT_EXAMPLES = {
+    "DATA_QUERY": [
+        "Which park had the highest mowing cost in March 2025?",
+        "Show total labor cost by park for 2024",
+        "Which parks are overdue for mowing?"
+    ],
+    "SOP_QUERY": [
+        "What are the mowing steps and safety requirements?",
+        "How to perform standard mowing procedures?",
+        "What equipment and safety gear are required for mowing?"
+    ],
+    "IMAGE_ASSESS": [
+        "Inspect this turf for disease and wear",
+        "Is this patch a disease or normal wear?",
+        "Assess turf condition from photo"
+    ]
+}
+
+_intent_model = None
+_intent_centroids: Optional[Dict[str, np.ndarray]] = None
+
+def _init_intent_model():
+    """Lazy-load sentence-transformers model and compute per-intent centroids."""
+    global _intent_model, _intent_centroids
+    if _intent_model is not None:
+        return
+    if SentenceTransformer is None or np is None:
+        _intent_model = None
+        _intent_centroids = None
+        return
+    try:
+        _intent_model = SentenceTransformer("all-MiniLM-L6-v2")
+        centroids: Dict[str, np.ndarray] = {}
+        for intent, examples in _INTENT_EXAMPLES.items():
+            embs = _intent_model.encode(examples, convert_to_numpy=True, show_progress_bar=False)
+            centroid = embs.mean(axis=0)
+            norm = np.linalg.norm(centroid)
+            if norm > 0:
+                centroid = centroid / norm
+            centroids[intent] = centroid
+        _intent_centroids = centroids
+    except Exception:
+        _intent_model = None
+        _intent_centroids = None
 
 def _norm(s: Optional[str]) -> str:
     return (s or "").strip().lower()
@@ -32,14 +85,41 @@ def _normalize_month_year(t: str) -> tuple[Optional[int], Optional[int]]:
     return month, year
 
 def classify_intent(text: str, image_uri: Optional[str]) -> (str, float):
+    """
+    Embedding-based intent detection using all-MiniLM-L6-v2.
+    - If model unavailable, fall back to the original regex rules.
+    - Returns (intent_label, confidence 0.0-1.0).
+    """
     t = _norm(text)
     if image_uri:
-        return "IMAGE_ASSESS", 0.8
-    if re.search(r"(how to|what steps|procedure).*(mow|maintain|repair)", t):
-        return "SOP_QUERY", 0.8
-    if re.search(r"(which|list|show).*(cost|overdue|park|parks|mow|labor)", t):
-        return "DATA_QUERY", 0.75
-    return "DATA_QUERY", 0.6
+        return "IMAGE_ASSESS", 0.95
+
+    _init_intent_model()
+    if _intent_model is None or _intent_centroids is None:
+        # fallback to rule-based classifier
+        if re.search(r"(how to|what steps|procedure).*(mow|maintain|repair)", t):
+            return "SOP_QUERY", 0.8
+        if re.search(r"(which|list|show).*(cost|overdue|park|parks|mow|labor)", t):
+            return "DATA_QUERY", 0.75
+        return "DATA_QUERY", 0.6
+
+    # embed query and compute cosine similarity against intent centroids
+    q_emb = _intent_model.encode([t], convert_to_numpy=True, show_progress_bar=False)[0]
+    q_norm = np.linalg.norm(q_emb)
+    if q_norm > 0:
+        q_emb = q_emb / q_norm
+
+    best_intent = "DATA_QUERY"
+    best_sim = -1.0
+    for intent, centroid in _intent_centroids.items():
+        sim = float(np.dot(q_emb, centroid))
+        if sim > best_sim:
+            best_sim = sim
+            best_intent = intent
+
+    # convert cosine (-1..1) to confidence (0..1)
+    conf = float((best_sim + 1.0) / 2.0)
+    return best_intent, round(conf, 2)
 
 def extract_slots(text: str, image_uri: Optional[str]) -> Dict[str, Any]:
     t = _norm(text)

@@ -4,3 +4,7 @@ fastapi>=0.111
 uvicorn[standard]>=0.30
 pydantic>=2.7
 openpyxl
+transformers>=4.37
+sentence-transformers>=2.4
+duckdb>=0.8.1
+langchain_community
