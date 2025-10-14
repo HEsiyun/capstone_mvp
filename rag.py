@@ -103,17 +103,51 @@ class RAGIndex:
 RAG = RAGIndex(RAG_DOC_DIR, FAISS_DIR)
 
 def kb_retrieve(query: str, top_k: int = 3, filters: Optional[dict] = None):
+    """检索知识库文档片段"""
     return {"hits": RAG.retrieve(query, k=top_k) if query else []}
 
-def sop_extract(snippets: List[str], schema: List[str]):
+def sop_extract(snippets: List[str], schema: Optional[List[str]] = None):
+    """
+    从文档片段中提取结构化SOP信息
+    
+    Args:
+        snippets: 文档文本片段列表
+        schema: 可选的提取模式（当前版本未使用，保留用于未来扩展）
+    """
+    # 处理空输入
+    if not snippets:
+        return {"steps": [], "materials": [], "tools": [], "safety": []}
+    
     text = "\n".join(snippets)
     lines = [l.strip() for l in text.splitlines() if l.strip()]
 
-    def pick(pred): return [l for l in lines if pred(l)]
+    def pick(pred): 
+        return [l for l in lines if pred(l)]
+    
+    # 提取步骤（带编号或符号的行）
     steps = [l for l in lines if re.match(r"^(\d+[\).\s]|•|-)\s", l)]
-    mats  = pick(lambda l: re.search(r"(material|fertilizer|seed|mulch|line|marking|fuel)", l, re.I))
-    tools = pick(lambda l: re.search(r"(mower|edger|trimmer|blower|truck|line marker|roller|equipment)", l, re.I))
-    safety= pick(lambda l: re.search(r"(safety|PPE|goggles|hearing|lockout|traffic|cone)", l, re.I))
+    
+    # 提取材料
+    mats = pick(lambda l: re.search(
+        r"(material|fertilizer|seed|mulch|line|marking|fuel)", l, re.I
+    ))
+    
+    # 提取工具
+    tools = pick(lambda l: re.search(
+        r"(mower|edger|trimmer|blower|truck|line marker|roller|equipment)", l, re.I
+    ))
+    
+    # 提取安全事项
+    safety = pick(lambda l: re.search(
+        r"(safety|PPE|goggles|hearing|lockout|traffic|cone)", l, re.I
+    ))
+    
+    # 去重
     dedup = lambda xs: list(dict.fromkeys(xs))
-    return {"steps": dedup(steps)[:12], "materials": dedup(mats)[:10],
-            "tools": dedup(tools)[:10], "safety": dedup(safety)[:10]}
+    
+    return {
+        "steps": dedup(steps)[:12], 
+        "materials": dedup(mats)[:10],
+        "tools": dedup(tools)[:10], 
+        "safety": dedup(safety)[:10]
+    }

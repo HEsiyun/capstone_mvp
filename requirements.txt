@@ -1,13 +1,23 @@
-pandas
-pillow
+# Core dependencies
+pandas==2.2.0
+numpy==1.26.4
+pillow>=10.0.0
+
+# Web framework
 fastapi>=0.111
 uvicorn[standard]>=0.30
 pydantic>=2.7
-openpyxl
-duckdb
-langchain-community
-langchain-text-splitters
-faiss-cpu
-transformers
-torch
-sentence-transformers
+
+# Data processing
+openpyxl>=3.1.0
+duckdb>=0.10.0
+
+# LangChain & RAG
+langchain>=0.1.0
+langchain-community>=0.0.20
+faiss-cpu>=1.7.4
+sentence-transformers>=2.2.0
+pypdf>=3.17.0
+
+# LLM integration
+openai>=1.12.0
