@@ -77,6 +77,52 @@ _MONTHS = {
 _MONTH_ABBR = {k[:3]: v for k, v in _MONTHS.items()}
 
 
+# intent examples for embedding-based classifier
+_INTENT_EXAMPLES = {
+    "DATA_QUERY": [
+        "Which park had the highest mowing cost in March 2025?",
+        "Show total labor cost by park for 2024",
+        "Which parks are overdue for mowing?"
+    ],
+    "SOP_QUERY": [
+        "What are the mowing steps and safety requirements?",
+        "How to perform standard mowing procedures?",
+        "What equipment and safety gear are required for mowing?"
+    ],
+    "IMAGE_ASSESS": [
+        "Inspect this turf for disease and wear",
+        "Is this patch a disease or normal wear?",
+        "Assess turf condition from photo"
+    ]
+}
+
+_intent_model = None
+_intent_centroids: Optional[Dict[str, np.ndarray]] = None
+
+def _init_intent_model():
+    """Lazy-load sentence-transformers model and compute per-intent centroids."""
+    global _intent_model, _intent_centroids
+    if _intent_model is not None:
+        return
+    if SentenceTransformer is None or np is None:
+        _intent_model = None
+        _intent_centroids = None
+        return
+    try:
+        _intent_model = SentenceTransformer("all-MiniLM-L6-v2")
+        centroids: Dict[str, np.ndarray] = {}
+        for intent, examples in _INTENT_EXAMPLES.items():
+            embs = _intent_model.encode(examples, convert_to_numpy=True, show_progress_bar=False)
+            centroid = embs.mean(axis=0)
+            norm = np.linalg.norm(centroid)
+            if norm > 0:
+                centroid = centroid / norm
+            centroids[intent] = centroid
+        _intent_centroids = centroids
+    except Exception:
+        _intent_model = None
+        _intent_centroids = None
+
 def _norm(s: Optional[str]) -> str:
     return (s or "").strip().lower()
 
