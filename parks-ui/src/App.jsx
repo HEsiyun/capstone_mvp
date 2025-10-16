@@ -1,9 +1,21 @@
 import React, { useState } from "react";
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 export default function App() {
   // ---- Config ----
   const [baseUrl, setBaseUrl] = useState("http://127.0.0.1:8000");
-  const [activeTab, setActiveTab] = useState("agent"); // "agent" | "nlu"
+  const [activeTab, setActiveTab] = useState("agent");
 
   // ---- Query State ----
   const [text, setText] = useState(
@@ -16,7 +28,7 @@ export default function App() {
   const [resp, setResp] = useState(null);
   const [error, setError] = useState("");
 
-  // ---- Only two presets ----
+  // ---- Presets ----
   const presets = [
     {
       label: "Mowing Cost (Mar 2025)",
@@ -25,6 +37,18 @@ export default function App() {
     {
       label: "Mowing Steps & Safety",
       text: "What are the mowing steps and safety requirements?",
+    },
+    {
+      label: "Cost Trend",
+      text: "Show mowing cost trend from January to June 2025",
+    },
+    {
+      label: "Compare Parks",
+      text: "Compare mowing costs across all parks in March 2025",
+    },
+    {
+      label: "Last Mowing",
+      text: "When was the last mowing at Cambridge Park?",
     },
   ];
 
@@ -64,12 +88,271 @@ export default function App() {
     return <div className="prose" dangerouslySetInnerHTML={{ __html: html }} />;
   }
 
+  // ========== NEW: Charts Component ==========
+  function ChartsView({ charts }) {
+    if (!charts || !charts.length) return null;
+
+    return (
+      <div style={{ marginTop: 16 }}>
+        {charts.map((chart, idx) => (
+          <div key={idx} className="card" style={{ marginBottom: 16 }}>
+            <div className="card-title">
+              {chart.title || `Chart ${idx + 1}`}
+            </div>
+            <div style={{ width: "100%", height: 400 }}>
+              {renderChart(chart)}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  function renderChart(chart) {
+    const chartType = chart.type;
+
+    if (chartType === "line") {
+      return renderLineChart(chart);
+    }
+
+    if (chartType === "bar") {
+      return renderBarChart(chart);
+    }
+
+    if (chartType === "bar_stacked") {
+      return renderStackedBarChart(chart);
+    }
+
+    if (chartType === "timeline") {
+      return renderTimeline(chart);
+    }
+
+    return <div className="muted">Unsupported chart type: {chartType}</div>;
+  }
+
+  // 折线图
+  function renderLineChart(chart) {
+    const allXValues = [
+      ...new Set(chart.series.flatMap((s) => s.data.map((d) => d.x))),
+    ].sort((a, b) => a - b);
+
+    const chartData = allXValues.map((xVal) => {
+      const dataPoint = { [chart.x_axis.field]: xVal };
+      chart.series.forEach((series) => {
+        const point = series.data.find((d) => d.x === xVal);
+        dataPoint[series.name] = point ? point.y : null;
+      });
+      return dataPoint;
+    });
+
+    const colors = ["#8884d8", "#82ca9d", "#ffc658", "#ff7c7c", "#8dd1e1"];
+
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis
+            dataKey={chart.x_axis.field}
+            label={{
+              value: chart.x_axis.label,
+              position: "insideBottom",
+              offset: -5,
+            }}
+          />
+          <YAxis
+            label={{
+              value: chart.y_axis.label,
+              angle: -90,
+              position: "insideLeft",
+            }}
+          />
+          <Tooltip />
+          {chart.legend && <Legend />}
+          {chart.series.map((series, idx) => (
+            <Line
+              key={series.name}
+              type="monotone"
+              dataKey={series.name}
+              stroke={colors[idx % colors.length]}
+              strokeWidth={2}
+              dot={{ r: 4 }}
+              activeDot={{ r: 6 }}
+            />
+          ))}
+        </LineChart>
+      </ResponsiveContainer>
+    );
+  }
+
+  // 柱状图
+  function renderBarChart(chart) {
+    const chartData = chart.series[0].data.map((d) => ({
+      [chart.x_axis.field]: d.x,
+      [chart.y_axis.field]: d.y,
+    }));
+
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis
+            dataKey={chart.x_axis.field}
+            label={{
+              value: chart.x_axis.label,
+              position: "insideBottom",
+              offset: -5,
+            }}
+            angle={-15}
+            textAnchor="end"
+            height={80}
+          />
+          <YAxis
+            label={{
+              value: chart.y_axis.label,
+              angle: -90,
+              position: "insideLeft",
+            }}
+          />
+          <Tooltip />
+          <Bar
+            dataKey={chart.y_axis.field}
+            fill={chart.color || "#4CAF50"}
+            radius={[8, 8, 0, 0]}
+          />
+        </BarChart>
+      </ResponsiveContainer>
+    );
+  }
+
+  // 堆叠柱状图
+  function renderStackedBarChart(chart) {
+    const allXValues = [
+      ...new Set(chart.series.flatMap((s) => s.data.map((d) => d.x))),
+    ];
+
+    const chartData = allXValues.map((xVal) => {
+      const dataPoint = { [chart.x_axis.field]: xVal };
+      chart.series.forEach((series) => {
+        const point = series.data.find((d) => d.x === xVal);
+        dataPoint[series.name] = point ? point.y : 0;
+      });
+      return dataPoint;
+    });
+
+    const colors = ["#8884d8", "#82ca9d", "#ffc658", "#ff7c7c", "#8dd1e1"];
+
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis
+            dataKey={chart.x_axis.field}
+            label={{
+              value: chart.x_axis.label,
+              position: "insideBottom",
+              offset: -5,
+            }}
+            angle={-15}
+            textAnchor="end"
+            height={80}
+          />
+          <YAxis
+            label={{
+              value: chart.y_axis.label,
+              angle: -90,
+              position: "insideLeft",
+            }}
+          />
+          <Tooltip />
+          {chart.legend && <Legend />}
+          {chart.series.map((series, idx) => (
+            <Bar
+              key={series.name}
+              dataKey={series.name}
+              stackId="a"
+              fill={colors[idx % colors.length]}
+            />
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
+    );
+  }
+
+  // 时间轴
+  function renderTimeline(chart) {
+    const sortedData = [...chart.data].sort((a, b) => {
+      if (chart.sort_order === "asc") {
+        return new Date(a.date) - new Date(b.date);
+      }
+      return new Date(b.date) - new Date(a.date);
+    });
+
+    return (
+      <div style={{ padding: "20px 0" }}>
+        {sortedData.map((item, idx) => (
+          <div
+            key={idx}
+            style={{
+              display: "flex",
+              gap: 16,
+              marginBottom: 24,
+              paddingBottom: 24,
+              borderBottom: idx < sortedData.length - 1 ? "1px solid #e0e0e0" : "none",
+            }}
+          >
+            <div style={{ fontSize: 24, flexShrink: 0 }}>📅</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 4 }}>
+                {item.park}
+              </div>
+              <div style={{ color: "#666", fontSize: 14, marginBottom: 8 }}>
+                {new Date(item.date).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <span
+                  style={{
+                    display: "inline-block",
+                    padding: "4px 8px",
+                    background: "#e3f2fd",
+                    color: "#1976d2",
+                    borderRadius: 4,
+                    fontSize: 12,
+                    fontWeight: 500,
+                  }}
+                >
+                  {item.sessions} session{item.sessions !== 1 ? "s" : ""}
+                </span>
+                <span
+                  style={{
+                    display: "inline-block",
+                    padding: "4px 8px",
+                    background: "#e3f2fd",
+                    color: "#1976d2",
+                    borderRadius: 4,
+                    fontSize: 12,
+                    fontWeight: 500,
+                  }}
+                >
+                  ${item.cost?.toFixed(2) || "0.00"}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   function TablesView({ tables }) {
     if (!tables || !tables.length) return null;
     return (
-      <div className="space-y">
+      <div style={{ marginTop: 16 }}>
         {tables.map((t, idx) => (
-          <div key={idx} className="card">
+          <div key={idx} className="card" style={{ marginBottom: 16 }}>
             <div className="card-title">{t.name || `table_${idx}`}</div>
             <div className="table-wrap">
               <table className="grid-table">
@@ -86,7 +369,9 @@ export default function App() {
                   {(t.rows || []).map((row, rIdx) => (
                     <tr key={rIdx}>
                       {(
-                        t.columns && t.columns.length ? t.columns : Object.keys(row)
+                        t.columns && t.columns.length
+                          ? t.columns
+                          : Object.keys(row)
                       ).map((c) => (
                         <td key={c}>{String(row[c])}</td>
                       ))}
@@ -131,7 +416,10 @@ export default function App() {
               <span className="mono">{l.tool}</span>
               <span>({l.elapsed_ms} ms)</span>
               <span className="muted">
-                args: {Array.isArray(l.args_redacted) ? l.args_redacted.join(", ") : "-"}
+                args:{" "}
+                {Array.isArray(l.args_redacted)
+                  ? l.args_redacted.join(", ")
+                  : "-"}
               </span>
               {l.err && <span className="err-text">{l.err}</span>}
             </div>
@@ -158,7 +446,6 @@ export default function App() {
         </header>
 
         <div className="grid">
-          {/* Left: query + controls */}
           <div className="col-main">
             <div className="card">
               <div className="row wrap gap">
@@ -180,6 +467,32 @@ export default function App() {
               />
 
               <div className="row gap">
+                <label className="btn file" style={{ marginRight: 8 }}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (!f) {
+                        setImageUri("");
+                        return;
+                      }
+                      const url = URL.createObjectURL(f);
+                      setImageUri(url);
+                    }}
+                  />
+                  + Image (optional)
+                </label>
+                {imageUri && (
+                  <img
+                    src={imageUri}
+                    alt="preview"
+                    className="thumb"
+                    style={{ maxHeight: 60 }}
+                  />
+                )}
+
                 <div className="spacer" />
 
                 <div className="tabs">
@@ -201,7 +514,9 @@ export default function App() {
                   className="btn primary"
                   disabled={loading}
                   onClick={() =>
-                    callEndpoint(activeTab === "agent" ? "/agent/answer" : "/nlu/parse")
+                    callEndpoint(
+                      activeTab === "agent" ? "/agent/answer" : "/nlu/parse"
+                    )
                   }
                 >
                   {loading ? "Running..." : "Send"}
@@ -212,13 +527,24 @@ export default function App() {
             </div>
           </div>
 
-          {/* Right: tips */}
           <aside className="col-side">
             <div className="card">
               <div className="label">Try these</div>
               <ul className="bullets">
                 <li>
-                  <em>Which park had the highest total mowing labor cost in March 2025?</em>
+                  <em>
+                    Which park had the highest total mowing labor cost in March
+                    2025?
+                  </em>
+                </li>
+                <li>
+                  <em>Show mowing cost trend from January to June 2025</em>
+                </li>
+                <li>
+                  <em>Compare mowing costs across all parks in March 2025</em>
+                </li>
+                <li>
+                  <em>When was the last mowing at Cambridge Park?</em>
                 </li>
                 <li>
                   <em>What are the mowing steps and safety requirements?</em>
@@ -228,20 +554,42 @@ export default function App() {
           </aside>
         </div>
 
-        {/* Response */}
         <section className="card">
           <div className="label">Response</div>
           {!resp && <div className="muted">No response yet.</div>}
           {resp && (
             <div className="stack">
               {resp.answer_md && <div>{renderMarkdown(resp.answer_md)}</div>}
+              
+              {activeTab === "agent" && <ChartsView charts={resp.charts} />}
+              
               {activeTab === "agent" && <TablesView tables={resp.tables} />}
-              {activeTab === "agent" && <CitationsView citations={resp.citations} />}
+              {activeTab === "agent" && (
+                <CitationsView citations={resp.citations} />
+              )}
               {activeTab === "agent" && <LogsView logs={resp.logs} />}
+
               {activeTab === "nlu" && (
-                <pre className="json">
-                  {JSON.stringify(resp, null, 2)}
-                </pre>
+                <div className="stack">
+                  <div className="card">
+                    <div className="label">Intent</div>
+                    <pre className="json">
+                      {JSON.stringify(resp.intent || resp.intent?.intent, null, 2)}
+                    </pre>
+                  </div>
+                  <div className="card">
+                    <div className="label">Slots</div>
+                    <pre className="json">
+                      {JSON.stringify(resp.slots || resp?.slots, null, 2)}
+                    </pre>
+                  </div>
+                  <div className="card">
+                    <div className="label">Raw</div>
+                    <pre className="json">
+                      {JSON.stringify(resp, null, 2)}
+                    </pre>
+                  </div>
+                </div>
               )}
             </div>
           )}
