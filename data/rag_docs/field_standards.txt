@@ -1,0 +1,462 @@
+# Sports Field Dimension Standards
+
+This document provides standard dimensions for various sports fields and activities across different age groups and competition levels.
+
+---
+
+# Rectangular Field Sports
+
+## Soccer Standards
+
+### Soccer U5 - U6
+- Width: Not Applicable
+- Length: Not Applicable
+- Notes: Introductory level, flexible dimensions
+
+### Soccer U7
+- Width: 18-22 meters
+- Length: 25-30 meters
+- Minimum Width: 18m
+- Minimum Length: 25m
+- Age Group: Under 7 years
+- Field Type: Small-sided game
+
+### Soccer U8-U9
+- Width: 25-30 meters
+- Length: 30-36 meters
+- Minimum Width: 25m
+- Minimum Length: 30m
+- Age Group: Under 8-9 years
+- Field Type: Small-sided game
+
+### Soccer U10 - U11
+- Width: 30-36 meters
+- Length: 40-55 meters
+- Minimum Width: 30m
+- Minimum Length: 40m
+- Age Group: Under 10-11 years
+- Field Type: Modified game
+
+### Soccer U12 - U13 (9v9)
+- Width: 42-55 meters
+- Length: 60-75 meters
+- Minimum Width: 42m
+- Minimum Length: 60m
+- Age Group: Under 12-13 years
+- Format: 9 versus 9 players
+- Field Type: Modified game
+
+### Soccer 11v11 (Full Size)
+- Width: 45-90 meters
+- Length: 90-120 meters
+- Minimum Width: 45m
+- Minimum Length: 90m
+- Format: 11 versus 11 players
+- Field Type: Full regulation size
+- Notes: Standard adult and competitive youth soccer
+
+---
+
+## Cricket Standards
+
+### Cricket Oval Infield
+- Width: 124.34 meters
+- Length: 132.94 meters
+- Minimum Width: 124m
+- Minimum Length: 132m
+- Field Type: Oval infield
+- Notes: Traditional cricket ground dimensions
+
+---
+
+## Football Standards
+
+### CFL (Canadian Football League)
+- Width: 65.436 meters (65 yards)
+- Length: 147.156 meters (110 yards + end zones)
+- Minimum Width: 65m
+- Minimum Length: 147m
+- Field Type: Canadian regulation
+
+### NFL (National Football League)
+- Width: 54.768 meters (53.33 yards)
+- Length: 119.728 meters (100 yards + end zones)
+- Width Range: 54-55 meters
+- Length Range: 119-120 meters
+- Field Type: American regulation
+
+---
+
+## Other Field Sports
+
+### Gaelic Football
+- Width: 80-90 meters
+- Length: 130-145 meters
+- Minimum Width: 95m
+- Minimum Length: 147m
+- Field Type: Irish sport
+
+### Lacrosse
+- Width: 69.49 meters
+- Length: 118.87 meters
+- Minimum Width: 69m
+- Minimum Length: 118m
+- Field Type: Box or field lacrosse
+
+### Rugby
+- Width: 80 meters
+- Length: 154 meters
+- Minimum Width: 80m
+- Minimum Length: 154m
+- Field Type: Rugby union regulation
+
+### Ultimate Frisbee
+- Width: 46.144 meters
+- Length: 109.144 meters
+- Minimum Width: 46m
+- Minimum Length: 109m
+- Field Type: Ultimate regulation
+
+---
+
+# Diamond Field Sports (Baseball & Softball)
+
+## Softball - Male Categories
+
+### Softball Male Masters (U23, U20, U17)
+- Pitching Distance: 14.02 meters
+- Base Distance: 18.288 meters
+- Outfield Fence Range: 68.58-80.77 meters
+- Home to Pitch Range: 13.72-14.32 meters
+- Home to First Base Range: 17.988-18.588 meters
+- Age Groups: Under 23, Under 20, Under 17
+- Gender: Male
+- Field Type: Diamond
+
+### Softball Men U15
+- Pitching Distance: 12.8 meters
+- Base Distance: 18.288 meters
+- Outfield Fence Range: 64-76.2 meters
+- Home to Pitch Range: 12.5-13.1 meters
+- Home to First Base Range: 17.988-18.588 meters
+- Age Group: Under 15 years
+- Gender: Male
+
+### Softball Men U13
+- Pitching Distance: 11.58 meters
+- Base Distance: 16.764 meters
+- Outfield Fence Range: 51.82-68.58 meters
+- Home to Pitch Range: 11.2-11.8 meters
+- Home to First Base Range: 16.5-17.04 meters
+- Age Group: Under 13 years
+- Gender: Male
+
+### Softball Men U11
+- Pitching Distance: 10.67 meters
+- Base Distance: 13.72 meters
+- Outfield Fence Range: 48.77-68.58 meters
+- Home to Pitch Range: 10.37-10.97 meters
+- Home to First Base Range: 13.5-14.02 meters
+- Age Group: Under 11 years
+- Gender: Male
+
+### Softball Men U9, U7
+- Pitching Distance: 9.144 meters
+- Base Distance: 13.72 meters
+- Outfield Fence Range: 48.77-68.58 meters
+- Home to Pitch Range: 8.844-9.44 meters
+- Home to First Base Range: 13.5-14.02 meters
+- Age Groups: Under 9, Under 7 years
+- Gender: Male
+
+---
+
+## Softball - Female Categories
+
+### Softball Female Masters
+- Pitching Distance: 13.12 meters
+- Base Distance: 18.288 meters
+- Outfield Fence Range: 64-68.58 meters
+- Home to Pitch Range: 12.9-13.42 meters
+- Home to First Base Range: 17.988-18.588 meters
+- Division: Masters
+- Gender: Female
+
+### Softball Female A, B, & C
+- Pitching Distance: 13.12 meters
+- Base Distance: 18.288 meters
+- Outfield Fence Range: 67.06-71.63 meters
+- Home to Pitch Range: 12.9-13.42 meters
+- Home to First Base Range: 17.988-18.588 meters
+- Divisions: A, B, C
+- Gender: Female
+
+### Softball Female D
+- Pitching Distance: 12.19 meters
+- Base Distance: 18.288 meters
+- Outfield Fence Range: 60.96-64 meters
+- Home to Pitch Range: 11.89-12.49 meters
+- Home to First Base Range: 17.988-18.588 meters
+- Division: D
+- Gender: Female
+
+### Softball Female U19 A & B
+- Pitching Distance: 13.12 meters
+- Base Distance: 18.288 meters
+- Outfield Fence Range: 60.96-65 meters
+- Home to Pitch Range: 12.9-13.42 meters
+- Home to First Base Range: 17.988-18.588 meters
+- Age Group: Under 19 years
+- Divisions: A, B
+- Gender: Female
+
+### Softball Female U20 C
+- Pitching Distance: 13.12 meters
+- Base Distance: 18.288 meters
+- Outfield Fence Range: 60.96-66 meters
+- Home to Pitch Range: 12.9-13.42 meters
+- Home to First Base Range: 17.988-18.588 meters
+- Age Group: Under 20 years
+- Division: C
+- Gender: Female
+
+### Softball Female U17
+- Pitching Distance: 13.12 meters
+- Base Distance: 18.288 meters
+- Outfield Fence Range: 60.96-67 meters
+- Home to Pitch Range: 12.9-13.42 meters
+- Home to First Base Range: 17.988-18.588 meters
+- Age Group: Under 17 years
+- Gender: Female
+
+### Softball Female U15
+- Pitching Distance: 12.19 meters
+- Base Distance: 18.288 meters
+- Outfield Fence Range: 51.82-68 meters
+- Home to Pitch Range: 11.89-12.49 meters
+- Home to First Base Range: 17.988-18.588 meters
+- Age Group: Under 15 years
+- Gender: Female
+
+### Softball Female U13
+- Pitching Distance: 11.58 meters
+- Base Distance: 16.76 meters
+- Outfield Fence Range: 48.77-69 meters
+- Home to Pitch Range: 11.28-11.88 meters
+- Home to First Base Range: 16.46-17.06 meters
+- Age Group: Under 13 years
+- Gender: Female
+
+### Softball Female U11
+- Pitching Distance: 10.67 meters
+- Base Distance: 13.72 meters
+- Outfield Fence Range: 45.72-70 meters
+- Home to Pitch Range: 10.97-11.57 meters
+- Home to First Base Range: 13.42-14.02 meters
+- Age Group: Under 11 years
+- Gender: Female
+
+### Softball Female U9, U7
+- Pitching Distance: 9.144 meters
+- Base Distance: 13.72 meters
+- Outfield Fence Range: 45.72-64 meters
+- Home to Pitch Range: 8.84-9.44 meters
+- Home to First Base Range: 13.42-14.02 meters
+- Age Groups: Under 9, Under 7 years
+- Gender: Female
+
+---
+
+## Slow-Pitch Softball
+
+### Slo-Pitch Mens
+- Pitching Distance: 15.24 meters
+- Base Distance: 21.336 meters
+- Outfield Fence Range: 91.44-114.3 meters
+- Home to Pitch Range: 14.84-15.54 meters
+- Home to First Base Range: 91.1-114.6 meters
+- Gender: Male
+- Type: Slow-pitch
+
+### Slo-Pitch Womens
+- Pitching Distance: 15.24 meters
+- Base Distance: 19.81 meters
+- Outfield Fence Range: 68.58-83.82 meters
+- Home to Pitch Range: 14.84-15.54 meters
+- Home to First Base Range: 19.51-20.11 meters
+- Gender: Female
+- Type: Slow-pitch
+
+### Slo-Pitch Co-Ed
+- Pitching Distance: 15.24 meters
+- Base Distance: 19.81 meters
+- Outfield Fence Range: 83.82-99.06 meters
+- Home to Pitch Range: 14.84-15.54 meters
+- Home to First Base Range: 19.51-20.11 meters
+- Format: Co-educational
+- Type: Slow-pitch
+
+---
+
+## Baseball Standards
+
+### Baseball U18
+- Pitching Distance: 18.44 meters
+- Base Distance: 27.43 meters
+- Outfield Fence Range: 97.536-121.92 meters
+- Home to Pitch Range: 18.1-18.74 meters
+- Home to First Base Range: 27.13-27.73 meters
+- Age Group: Under 18 years
+- Field Type: Youth baseball regulation
+
+### Baseball U15
+- Pitching Distance: 16.45 meters
+- Base Distance: 24.38 meters
+- Outfield Fence Range: 82.3-91.44 meters
+- Home to Pitch Range: 16.15-16.75 meters
+- Home to First Base Range: 24.08-24.68 meters
+- Age Group: Under 15 years
+
+### Baseball U13
+- Pitching Distance: 14.63 meters
+- Base Distance: 21.34 meters
+- Outfield Fence Range: 68.58-79.5 meters
+- Home to Pitch Range: 14.33-14.93 meters
+- Home to First Base Range: 21.13-21.73 meters
+- Age Group: Under 13 years
+
+### Baseball U10 & U11
+- Pitching Distance: 14.02 meters
+- Base Distance: 18.288 meters
+- Outfield Fence Range: 54.86-60.96 meters
+- Home to Pitch Range: 13.72-14.32 meters
+- Home to First Base Range: 17.98-18.58 meters
+- Age Groups: Under 10, Under 11 years
+
+### Baseball U9 (Standard)
+- Pitching Distance: 14.02 meters
+- Base Distance: 18.288 meters
+- Outfield Fence Range: 45.72-60.96 meters
+- Home to Pitch Range: 13.72-14.32 meters
+- Home to First Base Range: 17.98-18.58 meters
+- Age Group: Under 9 years
+
+### Baseball U9 (Modified)
+- Pitching Distance: 12.80 meters
+- Base Distance: 18.288 meters
+- Outfield Fence Range: 45.72-60.96 meters
+- Home to Pitch Range: 12.5-13.1 meters
+- Home to First Base Range: 17.98-18.58 meters
+- Age Group: Under 9 years
+- Notes: Modified dimensions for smaller players
+
+### Baseball U7
+- Pitching Distance: 10.97 meters
+- Base Distance: 15.24 meters
+- Outfield Fence Range: 45.72-60.96 meters
+- Home to Pitch Range: 10.67-11.27 meters
+- Home to First Base Range: 14.94-15.54 meters
+- Age Group: Under 7 years
+- Notes: Introductory baseball
+
+---
+
+# Field Assessment Guidelines
+
+## Tolerance Standards
+- Fields are considered compliant if measurements are within 1 foot (approximately 0.3 meters) of stated criteria
+- Some variance allowed when field has appropriate amenities (pitcher's mound, base anchors, plugs)
+
+## Key Field Attributes
+
+### Rectangular Fields
+- **Goal Posts**: Indicates presence of soccer/football goal posts
+- **Field Length**: Primary playing area length in meters
+- **Field Width**: Primary playing area width in meters
+- **Surface Type**: Natural turf, artificial turf, or hybrid
+- **Field Markings**: Permanent or temporary line markings
+
+### Diamond Fields (Baseball/Softball)
+- **Pitching Distance**: Distance from home plate to pitcher's plate/rubber in meters
+- **Base Path Distance**: Distance from home plate to first base in meters
+- **Base Anchors or Plugs**: Presence of adjustable base systems (allows multi-use)
+- **Pitcher's Mound**: Presence of raised mound (required for baseball, not for softball)
+- **Outfield Fence**: Minimum and maximum distance from home plate
+- **Backstop**: Distance and height of backstop fence
+- **Dugouts**: Presence and condition of team dugouts
+
+## Multi-Use Flexibility
+Fields with adjustable features (movable bases, removable pitcher's mounds) can accommodate multiple age groups and sports with the same footprint by adjusting:
+- Base distances
+- Pitching rubber position
+- Fence configurations
+- Line markings
+
+## Measurement Criteria
+When assessing field suitability:
+1. Primary dimensions must fall within stated ranges
+2. Safety zones and runoff areas must meet minimum clearances
+3. Surface condition affects playability regardless of dimensions
+4. Amenities (lights, seating, drainage) impact competitive level designation
+
+---
+
+# Common Field Modifications
+
+## Expanding Field Size
+To upgrade a field for older age groups:
+- **Length Extension**: Add turf area at one or both ends
+- **Width Extension**: Expand sidelines symmetrically when possible
+- **Fence Adjustment**: Move outfield fences back for baseball/softball
+- **Typical Cost**: $50-150 per square meter for turf expansion
+
+## Downgrading for Younger Players
+To adapt large fields for younger age groups:
+- **Temporary Line Marking**: Use cones or paint for smaller boundaries
+- **Portable Goals**: Install smaller goals within existing posts
+- **Adjustable Bases**: Move base anchors closer together
+- **No Permanent Changes Required**
+
+---
+
+# Field Compatibility Quick Reference
+
+## Soccer Field Multi-Age Use
+- A 90m x 45m field can accommodate:
+  - Full-size 11v11 games
+  - Multiple U10-U11 games simultaneously (with temporary markings)
+  - U12-U13 9v9 games
+
+## Baseball/Softball Diamond Multi-Use
+- A field with 18.3m base paths and adjustable pitching rubber can serve:
+  - Softball Male U15-Masters (by adjusting pitcher's plate)
+  - Softball Female multiple divisions
+  - Baseball U10-U11
+  - Slow-pitch leagues
+
+## Critical Measurements for Compliance
+- **Soccer**: Minimum length and width are critical; slight variations acceptable
+- **Baseball/Softball**: Pitching distance and base paths must be precise within 0.3m
+- **Football/Rugby**: Field markings and dimensions must meet league standards exactly
+- **Multi-sport**: Cricket ovals can sometimes accommodate other sports during off-season
+
+---
+
+# Measurement Validation Notes
+
+## Assessment Methodology
+- Fields measured during professional site assessments (Binnie VSFS Assessment)
+- Some fields not measured due to access limitations or specialized use (e.g., dedicated cricket grounds)
+- Measurements verified against booking records and historical GIS data
+- Compliance determined by dimensional criteria plus functional amenities
+
+## Dimensional Tolerance
+- ±1 foot (0.3m) tolerance applied to most measurements
+- Stricter compliance required for competitive/tournament-level facilities
+- Recreational-level fields may have greater flexibility
+
+## Important Considerations
+- Actual playing area may differ from overall field footprint due to safety zones
+- Slope, drainage, and surface quality affect usability independent of dimensions
+- Local league rules may impose additional requirements beyond dimensional standards
+- Seasonal sports may share facilities with adjusted configurations

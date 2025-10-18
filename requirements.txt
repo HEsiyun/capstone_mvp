@@ -21,3 +21,4 @@ pypdf>=3.17.0
 
 # LLM integration
 openai>=1.12.0
+python-dotenv>=1.0.0

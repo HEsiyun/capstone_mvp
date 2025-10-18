@@ -47,6 +47,7 @@ body {
   margin: 0 auto;
   display: grid;
   gap: 20px;
+  overflow-x: hidden;
 }
 
 /* ========== Header ========== */
@@ -77,6 +78,8 @@ body {
   grid-template-columns: 1fr 340px;
   gap: 20px;
   align-items: start;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 @media (max-width: 1024px) {
@@ -356,10 +359,12 @@ body {
   border-radius: var(--radius);
   border: 1px solid var(--bd);
   margin-top: 8px;
+  max-width: 100%;
 }
 
 .grid-table {
   width: 100%;
+  min-width: 600px;
   border-collapse: collapse;
   font-size: 14px;
 }
@@ -463,6 +468,10 @@ body {
   font-family: 'SF Mono', Monaco, monospace;
   line-height: 1.6;
   max-height: 400px;
+  max-width: 100%;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
 }
 
 /* ========== Charts ========== */
