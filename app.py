@@ -62,4 +62,6 @@ def agent_answer(req: AgentReq):
     state = execute_plan(plan, slots)
     
     # 3. 生成最终答案
-    return compose_answer(nlu_result, state)
+    ans =  compose_answer(nlu_result, state)
+    print("Final Answer:", ans["answer_md"])
+    return ans

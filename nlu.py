@@ -52,6 +52,11 @@ INTENT_PROTOTYPES = {
         "Check this image and assess turf condition.",
         "Analyze this photo of the field",
     ],
+    "SQL_tool_2": [
+        "Calculate the differences in dimensions of a [shape] field for [sport]",
+        "What are the differences for the diamond fields for Softball Female - U17",
+        "What are the differences for the rectangular fields for U12 and U14?",
+    ]
 }
 
 # 预编码
@@ -236,6 +241,8 @@ def _detect_domain(text: str) -> str:
     t = _norm(text)
     if any(k in t for k in ["mowing", "mow", "turf", "grass", "lawn"]):
         return "mowing"
+    elif any(k in t for k in ["dimension", "fields", "field", "dimensions"]):
+        return "field_dimension"
     return "generic"
 
 
@@ -268,6 +275,16 @@ def classify_intent_and_slots(
 
     # 抽取实体
     domain = _detect_domain(q)
+    if domain == "field_dimension":
+        best_label = "SQL_tool_2"
+        return NLUResult(
+            intent=best_label,
+            confidence=round(best_score, 3),
+            slots={
+                "domain": domain,
+                "original_query": q},
+            template_hint="field_dimension.compare_dimensions",
+        )
     month, year = _parse_month_year(q)
     s_m, e_m, r_y = _parse_month_range(q)
     park = _parse_park(q)
@@ -442,7 +459,23 @@ def build_route_plan(nlu_result: NLUResult) -> List[Dict[str, Any]]:
             }
         })
         print(f"[NLU] Plan: RAG+CV workflow (kb_retrieve + cv_assess_rag)")
-
+    elif intent == "SQL_tool_2":
+        # 纯 SQL 查询 - field dimension
+        template = "field_dimension.compare_dimensions"  # 默认模板
+        
+        params = {
+            "domain": slots.get("domain"),
+            "original_query": slots.get("original_query"),
+        }
+        
+        plan.append({
+            "tool": "sql_query_rag",
+            "args": {
+                "template": template,
+                "params": params
+            }
+        })
+        print(f"[NLU] Plan: SQL_tool_2 workflow (template={template}, params={params})")
     return plan
 
 

@@ -36,6 +36,11 @@ def _ensure_duck() -> duckdb.DuckDBPyConnection:
 
     # Read Excel fresh (simple & explicit for MVP)
     df = pd.read_excel(LABOR_XLSX, sheet_name=LABOR_SHEET)
+
+    # Load field size data
+    field_size_path = os.path.join(DATA_DIR, "3 vsfs_master_inventory_fieldsizes.xlsx")
+    diamond_field_size_df = pd.read_excel(field_size_path, sheet_name=1)
+    diamond_field_size_df = diamond_field_size_df.fillna("None")
     # Normalize column names
     df.columns = [str(c).strip() for c in df.columns]
 
@@ -55,8 +60,11 @@ def _ensure_duck() -> duckdb.DuckDBPyConnection:
 
     # Re-create table
     con.execute("DROP TABLE IF EXISTS labor_data")
+    con.execute("DROP TABLE IF EXISTS diamond_field_size_data")
     con.register("labor_df", df)
+    con.register("diamond_field_size_data", diamond_field_size_df)
     con.execute("CREATE TABLE labor_data AS SELECT * FROM labor_df")
+    con.execute("CREATE TABLE diamond_field_size_data AS SELECT * FROM diamond_field_size_data")
     return con
 
 # -----------------------------
@@ -293,7 +301,19 @@ def _tpl_mowing_cost_breakdown_by_park(con: duckdb.DuckDBPyConnection, params: D
     elapsed = int((time.time() - t0) * 1000)
     return {"rows": rows, "rowcount": len(rows), "elapsed_ms": elapsed}
 
-
+def _tpl_get_diamond_dimensions(con: duckdb.DuckDBPyConnection, params: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Returns diamond field dimensions from the diamond_field_size_data table.
+    """
+    sql = """
+    SELECT "Name of Field ", "Diamonds: Dimension Home to Pitchers Plate - m ", "Diamonds: Home to First Base Path - m "
+    FROM diamond_field_size_data
+    LIMIT 10;
+    """
+    t0 = time.time()
+    rows = con.execute(sql).fetchdf().to_dict(orient="records")
+    elapsed = int((time.time() - t0) * 1000)
+    return {"rows": rows, "rowcount": len(rows), "elapsed_ms": elapsed}
 # -----------------------------
 # Dispatcher registry
 # -----------------------------
@@ -312,6 +332,8 @@ TEMPLATE_REGISTRY: Dict[str, Callable[[duckdb.DuckDBPyConnection, Dict[str, Any]
     
     # NEW: 月度总览（详细分解）
     "mowing.cost_breakdown": _tpl_mowing_cost_breakdown_by_park,
+    # NEW: 运动场地尺寸查询
+    "field_dimension.compare_dimensions": _tpl_get_diamond_dimensions,
 }
 
 # -----------------------------
