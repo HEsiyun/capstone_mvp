@@ -1,0 +1,16 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# macOS metadata
+.DS_Store
+
+
+# IDE / Editor settings
+.vscode/
+.idea/
+
+# Logs / temp files
+*.log
+*.tmp

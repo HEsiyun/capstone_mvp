@@ -7,13 +7,14 @@ from config import RAG_DOC_DIR, FAISS_DIR, NUMPY_AVAILABLE
 from langchain_community.retrievers import BM25Retriever
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
-from langchain_community.document_loaders import PyPDFLoader
+from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 class RAGIndex:
     """
     Primary: FAISS + HF embeddings (if numpy exists)
     Fallback: BM25 (no embeddings needed)
+    Supports: PDF and TXT files
     """
     def __init__(self, doc_dir: str, faiss_dir: str):
         self.doc_dir = doc_dir
@@ -25,19 +26,37 @@ class RAGIndex:
         self._ensure_index()
 
     def _load_docs(self):
-        pdfs = sorted(glob.glob(os.path.join(self.doc_dir, "*.pdf")))
+        """Load both PDF and TXT files from doc directory"""
         docs = []
+        
+        # Load PDFs
+        pdfs = sorted(glob.glob(os.path.join(self.doc_dir, "*.pdf")))
         for p in pdfs:
             try:
-                docs.extend(PyPDFLoader(p).load())
-            except Exception:
-                pass
+                loaded = PyPDFLoader(p).load()
+                docs.extend(loaded)
+                print(f"[RAG] Loaded PDF: {os.path.basename(p)} ({len(loaded)} pages)")
+            except Exception as e:
+                print(f"[RAG] Failed to load PDF {p}: {e}")
+        
+        # Load TXT files
+        txts = sorted(glob.glob(os.path.join(self.doc_dir, "*.txt")))
+        for t in txts:
+            try:
+                loaded = TextLoader(t, encoding='utf-8').load()
+                docs.extend(loaded)
+                print(f"[RAG] Loaded TXT: {os.path.basename(t)} ({len(loaded)} docs)")
+            except Exception as e:
+                print(f"[RAG] Failed to load TXT {t}: {e}")
+        
+        print(f"[RAG] Total documents loaded: {len(docs)}")
         return docs
 
     def _ensure_index(self):
         docs = self._load_docs()
         if not docs:
             self.mode = "none"
+            print("[RAG] No documents found in", self.doc_dir)
             return
 
         if NUMPY_AVAILABLE:
@@ -46,12 +65,17 @@ class RAGIndex:
                 if os.path.isdir(self.faiss_dir) and os.listdir(self.faiss_dir):
                     self.vs = FAISS.load_local(self.faiss_dir, self.emb, allow_dangerous_deserialization=True)
                     self.mode = "faiss"
+                    print(f"[RAG] Loaded existing FAISS index")
                     return
+                
                 splitter = RecursiveCharacterTextSplitter(chunk_size=900, chunk_overlap=150)
                 chunks = splitter.split_documents(docs)
+                print(f"[RAG] Created {len(chunks)} chunks from {len(docs)} documents")
+                
                 self.vs = FAISS.from_documents(chunks, self.emb)
                 self.vs.save_local(self.faiss_dir)
                 self.mode = "faiss"
+                print(f"[RAG] Built and saved new FAISS index")
                 return
             except Exception as e:
                 print(f"[RAG] FAISS failed → BM25 fallback: {e}")
@@ -62,6 +86,7 @@ class RAGIndex:
             self.retriever = BM25Retriever.from_documents(chunks)
             self.retriever.k = 5
             self.mode = "bm25"
+            print(f"[RAG] Using BM25 retriever with {len(chunks)} chunks")
         except Exception as e:
             print(f"[RAG] BM25 failed: {e}")
             self.mode = "none"
@@ -103,18 +128,18 @@ class RAGIndex:
 RAG = RAGIndex(RAG_DOC_DIR, FAISS_DIR)
 
 def kb_retrieve(query: str, top_k: int = 3, filters: Optional[dict] = None):
-    """检索知识库文档片段"""
+    """Retrieve knowledge base document snippets"""
     return {"hits": RAG.retrieve(query, k=top_k) if query else []}
 
 def sop_extract(snippets: List[str], schema: Optional[List[str]] = None):
     """
-    从文档片段中提取结构化SOP信息
+    Extract structured SOP information from document snippets
     
     Args:
-        snippets: 文档文本片段列表
-        schema: 可选的提取模式（当前版本未使用，保留用于未来扩展）
+        snippets: List of document text snippets
+        schema: Optional extraction schema (reserved for future use)
     """
-    # 处理空输入
+    # Handle empty input
     if not snippets:
         return {"steps": [], "materials": [], "tools": [], "safety": []}
     
@@ -124,25 +149,25 @@ def sop_extract(snippets: List[str], schema: Optional[List[str]] = None):
     def pick(pred): 
         return [l for l in lines if pred(l)]
     
-    # 提取步骤（带编号或符号的行）
+    # Extract steps (lines with numbers or bullets)
     steps = [l for l in lines if re.match(r"^(\d+[\).\s]|•|-)\s", l)]
     
-    # 提取材料
+    # Extract materials
     mats = pick(lambda l: re.search(
         r"(material|fertilizer|seed|mulch|line|marking|fuel)", l, re.I
     ))
     
-    # 提取工具
+    # Extract tools
     tools = pick(lambda l: re.search(
         r"(mower|edger|trimmer|blower|truck|line marker|roller|equipment)", l, re.I
     ))
     
-    # 提取安全事项
+    # Extract safety items
     safety = pick(lambda l: re.search(
         r"(safety|PPE|goggles|hearing|lockout|traffic|cone)", l, re.I
     ))
     
-    # 去重
+    # Deduplicate
     dedup = lambda xs: list(dict.fromkeys(xs))
     
     return {
