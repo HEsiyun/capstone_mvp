@@ -18,8 +18,6 @@
 
 This project presents an **end-to-end multimodal AI system for municipal urban park management**, capable of understanding **natural language**, **structured maintenance data**, **domain documents**, and **field images** within a unified orchestration framework. It supports intelligent **field inspection**, **maintenance decision-making**, and **cost analytics** through a tightly coupled **NLU → Planner → Executor → Composer** pipeline.
 
-> 🎓 Developed as the **Final Capstone Project** at Northeastern University (Vancouver, BC).
->
 
 
 ---
