@@ -236,10 +236,5 @@ Returns:
 - Jinghan Gao  
 - Yibing Chen  
 
-Northeastern University, Vancouver, BC, Canada
-
 ---
 
-## 📜 License
-
-For academic and demonstration use only.
